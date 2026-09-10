@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate as django_authenticate
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -46,9 +46,9 @@ class LoginView(APIView):
     """
     Validates credentials and issues JWT cookies.
 
-    Note: CookieJWTAuthentication (authentication.py) only *authenticates*
-    requests on protected endpoints — it never returns profile data.
-    This view is what returns email/username/role, exactly once, at login.
+    This view only authenticates and sets the auth cookies — it does not
+    return profile data. Callers should hit MeView (GET /accounts/me)
+    right after a successful login to fetch email/username/role.
     """
 
     permission_classes = [AllowAny]
@@ -59,8 +59,6 @@ class LoginView(APIView):
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
 
-        # Django's ModelBackend looks up by USERNAME_FIELD (email here),
-        # but the kwarg is still conventionally named "username".
         user = django_authenticate(request, username=email, password=password)
 
         if user is None:
@@ -74,7 +72,26 @@ class LoginView(APIView):
 
         tokens = get_tokens_for_user(user)
 
-        response = Response(
+        response = Response({"detail": "Logged in successfully."}, status=status.HTTP_200_OK)
+        set_auth_cookies(response, tokens)
+        return response
+
+
+class MeView(APIView):
+    """
+    Returns the currently authenticated user's profile data.
+
+    Relies on CookieJWTAuthentication to identify request.user from the
+    httpOnly JWT cookie. The frontend should call this on app load (and
+    after refresh) to rehydrate user state, since it isn't persisted
+    anywhere client-side after the one-time LoginView response.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response(
             {
                 "email": user.email,
                 "username": user.username,
@@ -82,8 +99,6 @@ class LoginView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-        set_auth_cookies(response, tokens)
-        return response
 
 
 class LogoutView(APIView):
@@ -120,8 +135,6 @@ class EmailVerifyView(APIView):
 
 
 class PasswordResetRequestView(APIView):
-    """Step 1 — request a reset code by email."""
-
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -132,7 +145,6 @@ class PasswordResetRequestView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            # Don't leak whether the email exists in the system.
             return Response(
                 {"detail": "If that email exists, a code has been sent."}, status=status.HTTP_200_OK
             )
@@ -146,8 +158,6 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
-    """Step 2 — submit the code + a new password."""
-
     permission_classes = [AllowAny]
 
     def post(self, request):

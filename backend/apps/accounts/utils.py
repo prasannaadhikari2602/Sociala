@@ -2,8 +2,8 @@ import hashlib
 import secrets
 from datetime import timedelta
 
-import requests
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -76,42 +76,38 @@ def verify_otp(model, user, raw_code: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Brevo (Sendinblue) transactional email
+# Email sending — Django's SMTP backend, relayed through Brevo
+# (EMAIL_HOST=smtp-relay.brevo.com etc. in settings/.env)
 # ---------------------------------------------------------------------------
 
-def send_brevo_email(to_email: str, to_name: str, subject: str, html_content: str) -> dict:
-    url = "https://api.brevo.com/v3/smtp/email"
-    headers = {
-        "accept": "application/json",
-        "api-key": settings.BREVO_API_KEY,
-        "content-type": "application/json",
-    }
-    payload = {
-        "sender": {
-            "name": settings.BREVO_SENDER_NAME,
-            "email": settings.BREVO_SENDER_EMAIL,
-        },
-        "to": [{"email": to_email, "name": to_name}],
-        "subject": subject,
-        "htmlContent": html_content,
-    }
-
-    response = requests.post(url, json=payload, headers=headers, timeout=10)
-    response.raise_for_status()
-    return response.json()
+def send_transactional_email(to_email: str, subject: str, html_content: str) -> None:
+    """
+    Sends an HTML email via Django's configured EMAIL_BACKEND (SMTP, routed
+    through Brevo's relay). Raises on failure — callers can decide whether
+    a failed send should block the request (e.g. don't fail signup just
+    because the verification email didn't go out; log it instead).
+    """
+    message = EmailMultiAlternatives(
+        subject=subject,
+        body=html_content,  # plain-text fallback; same content is fine here
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email],
+    )
+    message.attach_alternative(html_content, "text/html")
+    message.send(fail_silently=False)
 
 
-def send_verification_email(user, code: str) -> dict:
+def send_verification_email(user, code: str) -> None:
     html = f"""
         <p>Hi {user.username},</p>
         <p>Your email verification code is:</p>
         <h2 style="letter-spacing:4px;">{code}</h2>
         <p>This code expires in {OTP_TTL_MINUTES} minutes.</p>
     """
-    return send_brevo_email(user.email, user.username, "Verify your email", html)
+    send_transactional_email(user.email, "Verify your email", html)
 
 
-def send_password_reset_email(user, code: str) -> dict:
+def send_password_reset_email(user, code: str) -> None:
     html = f"""
         <p>Hi {user.username},</p>
         <p>Your password reset code is:</p>
@@ -119,7 +115,7 @@ def send_password_reset_email(user, code: str) -> dict:
         <p>This code expires in {OTP_TTL_MINUTES} minutes.
         If you did not request this, you can safely ignore this email.</p>
     """
-    return send_brevo_email(user.email, user.username, "Reset your password", html)
+    send_transactional_email(user.email, "Reset your password", html)
 
 
 # ---------------------------------------------------------------------------
