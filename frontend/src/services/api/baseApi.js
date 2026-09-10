@@ -1,19 +1,30 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { logout } from "../../features/auth/authSlice";
 
-// Base URL is the root API prefix (e.g. http://localhost:8000/api/).
+// Whatever host the browser used to load the frontend is the host it can
+// also reach the backend on — this makes the same build work correctly
+// from both the laptop (localhost) and a phone on the LAN (192.168.x.x)
+// without hardcoding either one.
+const getApiBaseUrl = () => {
+  const { hostname } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return import.meta.env.VITE_API_URL || "http://localhost:8000";
+  }
+
+  return import.meta.env.VITE_API_LAN_URL || "http://192.168.18.9:8000";
+};
+
+// Base URL is the root API prefix (e.g. http://localhost:8000/).
 // The accounts app is mounted under it, so every endpoint below is called
-// as "accounts/<path>" (see authApi.js).
+// as "api/accounts/<path>" (see authApi.js).
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
-  credentials: "include", // send cookies if backend ever switches to cookie-based refresh
-  prepareHeaders: (headers, { getState }) => {
-    const token = getState().auth.accessToken;
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-    return headers;
-  },
+  baseUrl: getApiBaseUrl(),
+  // Required: auth is entirely via httpOnly JWT cookies (access_token /
+  // refresh_token set by LoginView), not an Authorization header. Without
+  // this, the browser won't send those cookies on cross-origin requests
+  // (e.g. phone -> laptop LAN IP counts as cross-origin).
+  credentials: "include",
 });
 
 /**
