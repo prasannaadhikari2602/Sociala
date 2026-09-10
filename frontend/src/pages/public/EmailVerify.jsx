@@ -1,116 +1,282 @@
 import { useState } from "react";
-import { useLocation, NavLink } from "react-router-dom";
+import { useLocation, NavLink, useNavigate } from "react-router-dom";
+import { FiCheckCircle, FiX, FiMail } from "react-icons/fi";
+
 import { useVerifyEmailMutation } from "../../features/auth/authApi";
 
-// Expects to be reached via navigate("/email-verify", { state: { email } })
-// right after signup. The user types the OTP code sent to that email.
+// Expects to be reached via:
+// navigate("/email-verify", { state: { email } })
+
 const EmailVerify = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
 
   const email = location.state?.email;
+
   const [code, setCode] = useState("");
   const [status, setStatus] = useState("idle"); // idle | success | error
   const [message, setMessage] = useState("");
 
-  // No email in state means this page was reached directly (e.g. a
-  // refresh, or a bookmarked/shared link) rather than via the signup
-  // flow, so there's nothing to verify against.
+  // If no email was passed through navigation state
   if (!email) {
     return (
-      <section className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          No email to verify
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Please sign up first to receive a verification code.
-        </p>
-        <NavLink
-          to="/signup"
-          className="mt-6 rounded-md bg-slate-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          Go to signup
-        </NavLink>
+      <section className="relative min-h-screen overflow-hidden bg-white px-4 py-10 sm:px-6">
+
+        {/* Background Effects */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-500/10 blur-[120px]" />
+
+          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[120px]" />
+        </div>
+
+        <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center justify-center">
+
+          <div className="relative w-full rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-xl sm:px-8 sm:py-9">
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Go back"
+            >
+              <FiX size={20} />
+            </button>
+
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600">
+              <FiMail size={24} />
+            </div>
+
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              No email to verify
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Please sign up first to receive a verification code.
+            </p>
+
+            <NavLink
+              to="/signup"
+              className="mt-6 inline-flex rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700"
+            >
+              Go to signup
+            </NavLink>
+
+          </div>
+        </div>
       </section>
     );
   }
 
   const onSubmit = async (e) => {
     e.preventDefault();
+
     setStatus("idle");
     setMessage("");
 
     try {
-      await verifyEmail({ email, code }).unwrap();
+      await verifyEmail({
+        email,
+        code,
+      }).unwrap();
+
       setStatus("success");
     } catch (err) {
       setStatus("error");
-      setMessage(err?.data?.detail || "Invalid or expired code.");
+      setMessage(
+        err?.data?.detail || "Invalid or expired verification code."
+      );
     }
   };
 
+  // Success Screen
   if (status === "success") {
     return (
-      <section className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-6 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">Email verified</h1>
-        <p className="mt-2 text-slate-600">You can now log in to your account.</p>
-        <NavLink
-          to="/login"
-          className="mt-6 rounded-md bg-slate-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          Go to login
-        </NavLink>
+      <section className="relative min-h-screen overflow-hidden bg-white px-4 py-10 sm:px-6">
+
+        {/* Background Effects */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-500/10 blur-[120px]" />
+
+          <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[120px]" />
+        </div>
+
+        <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center justify-center">
+
+          <div className="relative w-full rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-xl sm:px-8 sm:py-9">
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Go back"
+            >
+              <FiX size={20} />
+            </button>
+
+            {/* Success Icon */}
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-green-100 bg-green-50 text-green-600">
+              <FiCheckCircle size={25} />
+            </div>
+
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Email verified
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Your email has been successfully verified.
+            </p>
+
+            <NavLink
+              to="/login"
+              className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700"
+            >
+              Go to login
+            </NavLink>
+
+          </div>
+        </div>
       </section>
     );
   }
 
+  // Verification Form
   return (
-    <section className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-6 py-16">
-      <h1 className="text-2xl font-semibold text-slate-900">Verify your email</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Enter the code we sent to <span className="font-medium">{email}</span>.
-      </p>
+    <section className="relative min-h-screen overflow-hidden bg-white px-4 py-10 sm:px-6">
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
-        {status === "error" && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
-            {message}
-          </p>
-        )}
+      {/* Background Effects */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
 
-        <div>
-          <label htmlFor="code" className="block text-sm font-medium text-slate-700">
-            Verification code
-          </label>
-          <input
-            id="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-          />
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-500/10 blur-[120px]" />
+
+        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-blue-400/10 blur-[120px]" />
+
+      </div>
+
+      {/* Verification Container */}
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center justify-center">
+
+        {/* Verification Card */}
+        <div className="relative w-full rounded-3xl border border-slate-200 bg-white px-6 py-8 shadow-xl sm:px-8 sm:py-9">
+
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Go back"
+          >
+            <FiX size={20} />
+          </button>
+
+          {/* Header */}
+          <div className="text-center">
+
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600">
+              <FiMail size={24} />
+            </div>
+
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Verify your email
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Enter the verification code we sent to
+            </p>
+
+            <p className="mt-1 break-all text-sm font-medium text-blue-600">
+              {email}
+            </p>
+
+          </div>
+
+          {/* Form */}
+          <form
+            onSubmit={onSubmit}
+            className="mt-8 space-y-5"
+            noValidate
+          >
+
+            {/* Server Error */}
+            {status === "error" && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {message}
+              </div>
+            )}
+
+            {/* Verification Code */}
+            <div>
+              <label
+                htmlFor="code"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Verification code
+              </label>
+
+              <input
+                id="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="Enter verification code"
+                value={code}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setCode(value);
+                }}
+                className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-center text-lg font-semibold tracking-[0.4em] text-slate-900 placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-slate-400 outline-none transition ${
+                  status === "error"
+                    ? "border-red-300 focus:border-red-400 focus:ring-4 focus:ring-red-50"
+                    : "border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                }`}
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading || !code}
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? "Verifying..." : "Verify email"}
+
+              {!isLoading && (
+                <FiCheckCircle
+                  size={17}
+                  className="transition-transform group-hover:scale-105"
+                />
+              )}
+            </button>
+
+          </form>
+
+          {/* Bottom Help */}
+          <div className="mt-7 border-t border-slate-100 pt-6 text-center">
+
+            <p className="text-sm text-slate-500">
+              Didn't get a code? Check your spam folder.
+            </p>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Need another email?{" "}
+              <NavLink
+                to="/signup"
+                className="font-semibold text-blue-600 transition-colors hover:text-slate-900"
+              >
+                Sign up again
+              </NavLink>
+            </p>
+
+          </div>
+
         </div>
-
-        <button
-          type="submit"
-          disabled={isLoading || !code}
-          className="w-full rounded-md bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60"
-        >
-          {isLoading ? "Verifying..." : "Verify email"}
-        </button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-slate-500">
-        Didn't get a code? Check your spam folder, or{" "}
-        <NavLink to="/signup" className="font-medium text-slate-900 hover:underline">
-          sign up again
-        </NavLink>
-        .
-      </p>
+      </div>
     </section>
   );
 };
 
 export default EmailVerify;
+

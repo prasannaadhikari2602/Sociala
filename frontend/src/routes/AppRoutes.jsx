@@ -31,10 +31,6 @@ const AppRoutes = createBrowserRouter([
       { path: "/about", element: <About /> },
       { path: "/contact", element: <Contact /> },
       { path: "/explore", element: <Explore /> },
-      { path: "/email-verify", element: <EmailVerify /> },
-      {path: "/email-verify-resend-request", element: <EmailVerifyResendRequest />},
-      { path: "/password-reset", element: <PasswordResetRequest /> },
-      { path: "/password-reset/confirm", element: <PasswordResetConfirm /> },
     ],
   },
   {
@@ -42,6 +38,10 @@ const AppRoutes = createBrowserRouter([
     children: [
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
+      { path: "/email-verify", element: <EmailVerify /> },
+      {path: "/email-verify-resend-request", element: <EmailVerifyResendRequest />},
+      { path: "/password-reset", element: <PasswordResetRequest /> },
+      { path: "/password-reset/confirm", element: <PasswordResetConfirm /> },
     ]
   },
   {
