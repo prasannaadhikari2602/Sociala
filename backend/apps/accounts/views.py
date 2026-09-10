@@ -11,6 +11,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     SignupSerializer,
+    ResendEmailVerificationSerializer,
 )
 from .utils import (
     clear_auth_cookies,
@@ -133,6 +134,39 @@ class EmailVerifyView(APIView):
 
         return Response({"detail": "Email verified successfully."}, status=status.HTTP_200_OK)
 
+
+class ResendEmailVerificationView(APIView):
+    """Re-sends a fresh verification code to a signed-up but unverified user."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResendEmailVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # Don't leak whether the email exists in the system.
+            return Response(
+                {"detail": "If that account exists and isn't verified, a new code has been sent."},
+                status=status.HTTP_200_OK,
+            )
+
+        if user.is_verified:
+            return Response(
+                {"detail": "This email is already verified. You can log in."},
+                status=status.HTTP_200_OK,
+            )
+
+        code = create_email_verification(user)
+        send_verification_email(user, code)
+
+        return Response(
+            {"detail": "If that account exists and isn't verified, a new code has been sent."},
+            status=status.HTTP_200_OK,
+        )
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]

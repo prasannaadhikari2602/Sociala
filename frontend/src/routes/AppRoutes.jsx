@@ -20,6 +20,7 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 
 import PageNotFound from "../pages/error/PageNotFound";
 import UnauthorizedAccess from "../pages/error/UnauthorizedAccess";
+import EmailVerifyResendRequest from "../pages/public/EmailVerifyResendRequest";
 
 const AppRoutes = createBrowserRouter([
   {
@@ -32,6 +33,7 @@ const AppRoutes = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <Signup /> },
       { path: "/email-verify", element: <EmailVerify /> },
+      {path: "/email-verify-resend-request", element: <EmailVerifyResendRequest />},
       { path: "/password-reset", element: <PasswordResetRequest /> },
       { path: "/password-reset/confirm", element: <PasswordResetConfirm /> },
     ],

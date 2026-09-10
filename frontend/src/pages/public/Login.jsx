@@ -13,6 +13,10 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Set when login fails specifically because the email isn't verified
+  // yet, so we can show a "resend code" path instead of a dead-end error.
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+
   const {
     register,
     handleSubmit,
@@ -21,6 +25,8 @@ const Login = () => {
   } = useForm({ resolver: zodResolver(LoginSchema) });
 
   const onSubmit = async (values) => {
+    setUnverifiedEmail(null);
+
     try {
       // LoginView only authenticates and sets the auth cookies — it
       // returns no profile data.
@@ -37,11 +43,21 @@ const Login = () => {
         (user?.role === "admin" ? "/admin/dashboard" : "/dashboard");
       navigate(redirectTo, { replace: true });
     } catch (err) {
+      const detail = err?.data?.detail;
+
+      // Matches the exact string LoginView returns for an unverified
+      // account (403). Handle it separately so we can offer a resend path.
+      if (err?.status === 403 && detail === "Email not verified.") {
+        setError("root", {
+          message: "Your email isn't verified yet. Please verify it to log in.",
+        });
+        setUnverifiedEmail(values.email);
+        return;
+      }
+
       // DRF typically returns { detail: "..." } or field-level errors.
       const message =
-        err?.data?.detail ||
-        err?.data?.non_field_errors?.[0] ||
-        "Invalid email or password.";
+        detail || err?.data?.non_field_errors?.[0] || "Invalid email or password.";
       setError("root", { message });
     }
   };
@@ -55,9 +71,18 @@ const Login = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5" noValidate>
         {errors.root && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
-            {errors.root.message}
-          </p>
+          <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p>{errors.root.message}</p>
+            {unverifiedEmail && (
+              <NavLink
+                to="/email-verify-resend-request"
+                state={{ email: unverifiedEmail }}
+                className="mt-1 inline-block font-medium underline"
+              >
+                Resend verification email
+              </NavLink>
+            )}
+          </div>
         )}
 
         <div>

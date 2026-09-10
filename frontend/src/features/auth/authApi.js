@@ -9,6 +9,7 @@ import { setCredentials, logout } from "./authSlice";
  *   accounts/logout                     POST
  *   accounts/me                         GET
  *   accounts/email-verify               POST
+ *   accounts/email-verify/resend        POST
  *   accounts/password-reset/request     POST
  *   accounts/password-reset/confirm     POST
  *
@@ -90,6 +91,15 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    resendEmailVerification: builder.mutation({
+      // body: { email } — matches ResendEmailVerificationSerializer
+      query: (body) => ({
+        url: "api/accounts/email-verify/resend",
+        method: "POST",
+        body,
+      }),
+    }),
+
     requestPasswordReset: builder.mutation({
       // body: { email }
       query: (body) => ({
@@ -118,6 +128,7 @@ export const {
   useGetMeQuery,
   useLogoutUserMutation,
   useVerifyEmailMutation,
+  useResendEmailVerificationMutation,
   useRequestPasswordResetMutation,
   useConfirmPasswordResetMutation,
 } = authApi;
