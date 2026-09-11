@@ -213,3 +213,111 @@ class PasswordResetConfirmView(APIView):
         user.save(update_fields=["password", "updated_at"])
 
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
+    
+    
+
+class DeleteAccountView(APIView):
+    """
+    Permanently deletes the currently authenticated user's account.
+
+    The user must provide their current password before the account
+    can be deleted.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        password = request.data.get("password")
+
+        if not password:
+            return Response(
+                {"detail": "Password is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+
+        # Verify the password before deleting the account.
+        if not user.check_password(password):
+            return Response(
+                {"detail": "Incorrect password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Delete the account permanently.
+        user.delete()
+
+        # Remove authentication cookies.
+        response = Response(
+            {"detail": "Account deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+        clear_auth_cookies(response)
+
+        return response
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        if not current_password:
+            return Response(
+                {"detail": "Current password is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not new_password:
+            return Response(
+                {"detail": "New password is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not confirm_password:
+            return Response(
+                {"detail": "Please confirm your new password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not user.check_password(current_password):
+            return Response(
+                {"detail": "Current password is incorrect."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if new_password != confirm_password:
+            return Response(
+                {"detail": "New passwords do not match."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if current_password == new_password:
+            return Response(
+                {
+                    "detail": "New password must be different from your current password."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(new_password) < 8:
+            return Response(
+                {
+                    "detail": "New password must be at least 8 characters long."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        return Response(
+            {"detail": "Password changed successfully."},
+            status=status.HTTP_200_OK,
+        )

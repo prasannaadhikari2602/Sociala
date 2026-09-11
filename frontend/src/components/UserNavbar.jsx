@@ -90,10 +90,22 @@ const UserNavbar = () => {
 
 
   // ==========================================
+  // CLOSE MOBILE MENU THEN NAVIGATE
+  // ==========================================
+
+  const handleMobileNav = (path) => {
+    closeMenu();
+    navigate(path);
+  };
+
+
+  // ==========================================
   // LOGOUT
   // ==========================================
 
   const handleLogout = async () => {
+
+    closeMenu();
 
     try {
 
@@ -413,10 +425,12 @@ const UserNavbar = () => {
 
 
           {/* ====================================
-              PROFILE
+              PROFILE (desktop only — mobile menu
+              already has Profile/Settings/Logout,
+              so we don't also show the avatar there)
           ===================================== */}
 
-          <div className="relative">
+          <div className="relative hidden md:block">
 
 
             {/* Profile Button */}
@@ -727,7 +741,10 @@ const UserNavbar = () => {
                 <NavLink
                   key={link.path}
                   to={link.path}
-                  onClick={closeMenu}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleMobileNav(link.path);
+                  }}
                   className={({ isActive }) =>
                     `
                     flex
@@ -768,13 +785,7 @@ const UserNavbar = () => {
 
             <button
               type="button"
-              onClick={() => {
-
-                closeMenu();
-
-                navigate("/posts");
-
-              }}
+              onClick={() => handleMobileNav("/posts")}
               className="
                 mt-3
                 flex
@@ -818,11 +829,12 @@ const UserNavbar = () => {
                 MOBILE PROFILE
             ================================== */}
 
-            <Link
-              to="/profile"
-              onClick={closeMenu}
+            <button
+              type="button"
+              onClick={() => handleMobileNav("/profile")}
               className="
                 flex
+                w-full
                 items-center
                 gap-3
                 rounded-md
@@ -839,7 +851,7 @@ const UserNavbar = () => {
 
               Profile
 
-            </Link>
+            </button>
 
 
 
@@ -847,11 +859,12 @@ const UserNavbar = () => {
                 MOBILE NOTIFICATION
             ================================== */}
 
-            <Link
-              to="/notification"
-              onClick={closeMenu}
+            <button
+              type="button"
+              onClick={() => handleMobileNav("/notification")}
               className="
                 flex
+                w-full
                 items-center
                 gap-3
                 rounded-md
@@ -868,7 +881,7 @@ const UserNavbar = () => {
 
               Notification
 
-            </Link>
+            </button>
 
 
 
@@ -876,11 +889,12 @@ const UserNavbar = () => {
                 MOBILE SETTINGS
             ================================== */}
 
-            <Link
-              to="/settings"
-              onClick={closeMenu}
+            <button
+              type="button"
+              onClick={() => handleMobileNav("/settings")}
               className="
                 flex
+                w-full
                 items-center
                 gap-3
                 rounded-md
@@ -897,7 +911,7 @@ const UserNavbar = () => {
 
               Settings
 
-            </Link>
+            </button>
 
 
 
