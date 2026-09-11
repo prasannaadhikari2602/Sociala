@@ -39,7 +39,7 @@ const UserProfile = () => {
     <div className="min-h-screen bg-white text-slate-900">
       {/* Cover */}
       <div
-        className="relative h-56 w-full bg-gradient-to-br from-blue-900 via-blue-700 to-slate-900"
+        className="relative h-56 w-full bg-linear-to-br from-blue-900 via-blue-700 to-slate-900"
         style={
           profile.cover_image
             ? {
