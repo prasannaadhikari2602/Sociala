@@ -1,43 +1,39 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { FiLogOut } from "react-icons/fi";
-import { selectCurrentUser } from "../features/auth/authSlice";
-import { useLogoutUserMutation } from "../features/auth/authApi";
+import { selectIsAuthenticated } from "../features/auth/authSlice";
+import { useGetMyProfileQuery } from "../features/profiles/profileApi";
+import UserNavbar from "../components/UserNavbar";
 
 const UserLayout = () => {
-  const user = useSelector(selectCurrentUser);
-  const [logoutUser] = useLogoutUserMutation();
-  const navigate = useNavigate();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const { data, isLoading } = useGetMyProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    await logoutUser().unwrap().catch(() => {});
-    navigate("/login", { replace: true });
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-slate-500 text-sm">
+        Loading profile...
+      </div>
+    );
+  }
+
+  const isSetup = Boolean(data?.is_setup);
+  const onSetupPage = location.pathname === "/profile-setup";
+
+  if (!isSetup && !onSetupPage) {
+    return <Navigate to="/profile-setup" replace />;
+  }
+
+  if (isSetup && onSetupPage) {
+    return <Navigate to="/profile" replace />;
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <NavLink to="/dashboard" className="text-lg font-semibold text-slate-900">
-            Sociala
-          </NavLink>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-600">
-              {user?.first_name || user?.email}
-            </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-            >
-              <FiLogOut /> Log out
-            </button>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">
-        <Outlet />
-      </main>
+    <div>
+      {isSetup && <UserNavbar />}
+      <Outlet />
     </div>
   );
 };

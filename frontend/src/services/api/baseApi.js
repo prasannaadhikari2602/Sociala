@@ -16,8 +16,8 @@ const getApiBaseUrl = () => {
 };
 
 // Base URL is the root API prefix (e.g. http://localhost:8000/).
-// The accounts app is mounted under it, so every endpoint below is called
-// as "api/accounts/<path>" (see authApi.js).
+// The accounts app is mounted under it, so every endpoint is called as
+// "api/accounts/<path>" (see authApi.js), and profiles as "api/profiles/<path>".
 const baseQuery = fetchBaseQuery({
   baseUrl: getApiBaseUrl(),
   // Required: auth is entirely via httpOnly JWT cookies (access_token /
@@ -48,6 +48,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["User"],
+  tagTypes: ["User", "Profile", "Interest"],
   endpoints: () => ({}),
 });

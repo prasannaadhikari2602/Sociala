@@ -46,7 +46,7 @@ const Login = () => {
         location.state?.from?.pathname ||
         (user?.role === "admin"
           ? "/admin/dashboard"
-          : "/dashboard");
+          : "/");
 
       navigate(redirectTo, { replace: true });
     } catch (err) {
