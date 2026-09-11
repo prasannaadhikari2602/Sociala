@@ -79,6 +79,11 @@ INSTALLED_APPS = [
 
     "apps.accounts.apps.AccountsConfig",
     "apps.profiles.apps.ProfilesConfig",
+    "apps.reports.apps.ReportsConfig",
+    "apps.follows.apps.FollowsConfig",
+    "apps.posts.apps.PostsConfig",
+    "apps.notifications.apps.NotificationsConfig",
+    "apps.shares.apps.SharesConfig",
 ]
 
 

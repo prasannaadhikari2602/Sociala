@@ -25,141 +25,77 @@ import UserProfile from "../pages/user/UserProfile";
 import ProfileSetup from "../pages/user/ProfileSetup";
 import UserNotification from "../pages/user/UserNotification";
 import Posts from "../pages/user/Posts";
-import PostDetails from "../pages/user/PostDetails";
 import UserSettings from "../pages/user/UserSettings";
 import UserExplore from "../pages/user/UserExplore";
 
+import ViewUserProfile from "../pages/user/ViewUserProfile";
+import FollowListPage from "../pages/user/FollowListPage";
+import Reports from "../pages/admin/Reports";
+
 const AppRoutes = createBrowserRouter([
-  // =========================
-  // PUBLIC ROUTES
-  // =========================
+  // PUBLIC
   {
     element: <PublicLayout />,
     children: [
-      {
-        path: "/",
-        element: <Home />,
-      },
-      {
-        path: "/about",
-        element: <About />,
-      },
-      {
-        path: "/contact",
-        element: <Contact />,
-      },
+      { path: "/", element: <Home /> },
+      { path: "/about", element: <About /> },
+      { path: "/contact", element: <Contact /> },
     ],
   },
 
-  // =========================
-  // AUTH ROUTES
-  // =========================
+  // AUTH
   {
     element: <AuthLayout />,
     children: [
-      {
-        path: "/login",
-        element: <Login />,
-      },
-      {
-        path: "/signup",
-        element: <Signup />,
-      },
-      {
-        path: "/email-verify",
-        element: <EmailVerify />,
-      },
-      {
-        path: "/email-verify-resend-request",
-        element: <EmailVerifyResendRequest />,
-      },
-      {
-        path: "/password-reset",
-        element: <PasswordResetRequest />,
-      },
-      {
-        path: "/password-reset/confirm",
-        element: <PasswordResetConfirm />,
-      },
+      { path: "/login", element: <Login /> },
+      { path: "/signup", element: <Signup /> },
+      { path: "/email-verify", element: <EmailVerify /> },
+      { path: "/email-verify-resend-request", element: <EmailVerifyResendRequest /> },
+      { path: "/password-reset", element: <PasswordResetRequest /> },
+      { path: "/password-reset/confirm", element: <PasswordResetConfirm /> },
     ],
   },
 
-  // =========================
-  // USER ROUTES
-  // =========================
+  // USER
   {
     element: <ProtectedRoutes allowedRoles={["user"]} />,
     children: [
       {
         element: <UserLayout />,
         children: [
-          {path: '/user/home', element:<Feed />},
-          {
-            path: "/feed",
-            element: <Feed />,
-          },
-          {
-            path: "/userExplore",
-            element: <UserExplore />,
-          },
-          {
-            path: "/profile",
-            element: <UserProfile />,
-          },
-          {
-            path: "/profile-setup",
-            element: <ProfileSetup />,
-          },
-          {
-            path: "/notification",
-            element: <UserNotification />,
-          },
-          {
-            path: "/posts",
-            element: <Posts />,
-          },
-          {
-            path: "/postDetails",
-            element: <PostDetails />,
-          },
-          {
-            path: "/settings",
-            element: <UserSettings />,
-          },
+          { path: "/user/home", element: <Feed /> },
+          { path: "/feed", element: <Feed /> },
+          { path: "/userExplore", element: <UserExplore /> },
+          { path: "/profile", element: <UserProfile /> },
+          { path: "/profile/:userId", element: <ViewUserProfile /> },
+          { path: "/profile/:userId/followers", element: <FollowListPage mode="followers" /> },
+          { path: "/profile/:userId/following", element: <FollowListPage mode="following" /> },
+          { path: "/profile-setup", element: <ProfileSetup /> },
+          { path: "/notification", element: <UserNotification /> },
+          { path: "/posts", element: <Posts /> },
+          { path: "/settings", element: <UserSettings /> },
         ],
       },
     ],
   },
 
-  // =========================
-  // ADMIN ROUTES
-  // =========================
+  // ADMIN
   {
     element: <ProtectedRoutes allowedRoles={["admin"]} />,
     children: [
       {
         element: <AdminLayout />,
         children: [
-          {
-            path: "/admin/dashboard",
-            element: <AdminDashboard />,
-          },
+          { path: "/admin/dashboard", element: <AdminDashboard /> },
+          { path: "/admin/reports", element: <Reports /> },
         ],
       },
     ],
   },
 
-  // =========================
-  // ERROR ROUTES
-  // =========================
-  {
-    path: "/unauthorized",
-    element: <UnauthorizedAccess />,
-  },
-  {
-    path: "*",
-    element: <PageNotFound />,
-  },
+  // ERROR
+  { path: "/unauthorized", element: <UnauthorizedAccess /> },
+  { path: "*", element: <PageNotFound /> },
 ]);
 
 export default AppRoutes;

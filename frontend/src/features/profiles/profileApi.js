@@ -73,6 +73,12 @@ export const profileApi = baseApi.injectEndpoints({
       query: () => "api/profiles/interests/",
       providesTags: ["Interest"],
     }),
+
+    // keep your existing getMyProfile, updateProfile, etc. — just add:
+    getUserProfile: builder.query({
+      query: (userId) => `api/profiles/${userId}/`,
+      providesTags: (result, err, userId) => [{ type: "Profile", id: userId }],
+    }),
   }),
 
   overrideExisting: false,
@@ -84,4 +90,5 @@ export const {
   useUpdateProfileMutation,
   useGetProfileByUserIdQuery,
   useListInterestsQuery,
+  useGetUserProfileQuery,
 } = profileApi;

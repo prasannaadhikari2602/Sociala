@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { selectIsAuthenticated } from "../features/auth/authSlice";
 import { useGetMyProfileQuery } from "../features/profiles/profileApi";
 import UserNavbar from "../components/UserNavbar";
+import PostDetails from "../pages/user/PostDetails";
+import ReportPostModal from "../pages/shared/ReportPostModal";
 
 const UserLayout = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -34,6 +36,16 @@ const UserLayout = () => {
     <div>
       {isSetup && <UserNavbar />}
       <Outlet />
+
+      {/* Global overlays — only meaningful once profile setup is done,
+          since these dispatch off Redux state (activePostId / reportingPostId)
+          that can only be set from pages behind the setup gate anyway. */}
+      {isSetup && (
+        <>
+          <PostDetails />
+          <ReportPostModal />
+        </>
+      )}
     </div>
   );
 };

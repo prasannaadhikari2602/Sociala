@@ -88,18 +88,18 @@ const UserProfile = () => {
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#12111A] via-[#32145F] to-[#A855F7]" />
+          <div className="absolute inset-0 bg-linear-to-br from-[#12111A] via-[#32145F] to-[#A855F7]" />
         )}
 
         {/* Purple overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-black/10" />
 
         {/* Decorative circles */}
         {!profile.cover_image && (
           <>
             <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[#A855F7]/20 blur-3xl" />
 
-            <div className="absolute -left-20 bottom-[-120px] h-72 w-72 rounded-full bg-purple-400/10 blur-3xl" />
+            <div className="absolute -left-20 -bottom-30 h-72 w-72 rounded-full bg-purple-400/10 blur-3xl" />
           </>
         )}
 
@@ -165,7 +165,7 @@ const UserProfile = () => {
                       <div className="
                         flex h-full w-full
                         items-center justify-center
-                        bg-gradient-to-br
+                        bg-linear-to-br
                         from-purple-100
                         to-purple-50
                         text-4xl font-bold

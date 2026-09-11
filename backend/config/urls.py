@@ -13,6 +13,11 @@ urlpatterns = [
 
     path("api/accounts/", include("apps.accounts.urls")),
     path("api/profiles/", include("apps.profiles.urls")),
+    path("api/posts/", include("apps.posts.urls")),
+    path("api/follows/", include("apps.follows.urls")),
+    path("api/notifications/", include("apps.notifications.urls")),
+    path("api/reports/", include("apps.reports.urls")),
+    path("api/shares/", include("apps.shares.urls")),
 ]
 
 
