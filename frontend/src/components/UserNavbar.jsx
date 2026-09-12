@@ -26,6 +26,7 @@ import { TbSocial } from "react-icons/tb";
 import { selectCurrentUser } from "../features/auth/authSlice";
 
 import { useLogoutUserMutation } from "../features/auth/authApi";
+import { useGetUnreadCountQuery } from "../features/notifications/notificationApi";
 
 
 const UserNavbar = () => {
@@ -44,6 +45,19 @@ const UserNavbar = () => {
   // ==========================================
 
   const user = useSelector(selectCurrentUser);
+
+
+  // ==========================================
+  // UNREAD NOTIFICATION COUNT
+  // ==========================================
+
+  const { data: unreadData } = useGetUnreadCountQuery(undefined, {
+    // Refetch periodically so the badge doesn't go stale while the
+    // navbar sits mounted for a long session.
+    pollingInterval: 30000,
+  });
+
+  const unreadCount = unreadData?.count ?? 0;
 
 
   // ==========================================
@@ -399,26 +413,28 @@ const UserNavbar = () => {
 
             {/* Notification Count */}
 
-            <span
-              className="
-                absolute
-                right-0.5
-                top-0.5
-                flex
-                h-4
-                min-w-4
-                items-center
-                justify-center
-                rounded-full
-                bg-blue-600
-                px-1
-                text-[10px]
-                font-semibold
-                text-white
-              "
-            >
-              4
-            </span>
+            {unreadCount > 0 && (
+              <span
+                className="
+                  absolute
+                  right-0.5
+                  top-0.5
+                  flex
+                  h-4
+                  min-w-4
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-blue-600
+                  px-1
+                  text-[10px]
+                  font-semibold
+                  text-white
+                "
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
 
           </button>
 
@@ -880,6 +896,27 @@ const UserNavbar = () => {
               <FiBell size={17} />
 
               Notification
+
+              {unreadCount > 0 && (
+                <span
+                  className="
+                    ml-auto
+                    flex
+                    h-5
+                    min-w-5
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-blue-600
+                    px-1.5
+                    text-[10px]
+                    font-semibold
+                    text-white
+                  "
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
 
             </button>
 

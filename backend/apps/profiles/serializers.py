@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Profile, Interest
+from apps.follows.models import Follow  # ← adjust to your actual app path
 
 
 class InterestSerializer(serializers.ModelSerializer):
@@ -10,13 +11,6 @@ class InterestSerializer(serializers.ModelSerializer):
 
 
 class InterestNameField(serializers.SlugRelatedField):
-    """
-    Accepts a plain interest name string from the frontend (e.g. "technology")
-    instead of a numeric ID, and creates the Interest row if it doesn't exist
-    yet. Matching is case-insensitive so "Technology" and "technology" resolve
-    to the same row.
-    """
-
     def __init__(self, **kwargs):
         kwargs.setdefault("slug_field", "name")
         kwargs.setdefault("queryset", Interest.objects.all())
@@ -39,14 +33,18 @@ class InterestNameField(serializers.SlugRelatedField):
 class ProfileSerializer(serializers.ModelSerializer):
     """Used to return full profile data (when is_setup=True)."""
 
+    user_id = serializers.UUIDField(source="user.id", read_only=True)
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     interests = InterestSerializer(many=True, read_only=True)
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = [
             "id",
+            "user_id",
             "username",
             "email",
             "full_name",
@@ -57,10 +55,18 @@ class ProfileSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "interests",
             "is_setup",
+            "followers_count",
+            "following_count",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "is_setup", "created_at", "updated_at"]
+        read_only_fields = ["id", "user_id", "is_setup", "created_at", "updated_at"]
+
+    def get_followers_count(self, obj):
+        return Follow.objects.filter(following=obj.user).count()
+
+    def get_following_count(self, obj):
+        return Follow.objects.filter(follower=obj.user).count()
 
 
 class ProfileSetupSerializer(serializers.ModelSerializer):

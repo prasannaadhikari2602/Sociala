@@ -16,6 +16,7 @@ import {
   useUpdatePostMutation,
   useDeletePostMutation,
 } from "../../features/posts/postApi";
+import CommentList from "./CommentList";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -315,6 +316,12 @@ const PostDetails = ({ postId, onClose }) => {
                         <FiMessageCircle size={17} />
                         {post.comments_count ?? 0}
                       </span>
+                    </div>
+
+                    {/* Comments were never actually rendered here before —
+                        CommentList exists and works, it just wasn't mounted. */}
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <CommentList postId={post.id} />
                     </div>
                   </>
                 ) : (

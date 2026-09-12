@@ -38,6 +38,7 @@ export const baseApi = createApi({
     "Notification",
     "Report",
     "Share",
+    "FollowList",
   ],
   endpoints: () => ({}),
 });

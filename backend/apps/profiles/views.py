@@ -22,7 +22,6 @@ class MyProfileView(APIView):
         profile = Profile.objects.filter(user=request.user, is_setup=True).first()
 
         if not profile:
-            # Either no row exists yet, or it exists but setup was never completed
             return Response(
                 {
                     "is_setup": False,

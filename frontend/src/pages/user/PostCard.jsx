@@ -11,6 +11,7 @@ import {
   useUnsharePostMutation,
 } from "../../features/shares/shareApi";
 import ShareComposerModal from "./ShareComposerModal";
+import PostDetails from "./PostDetails";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -47,7 +48,7 @@ const Avatar = ({ user, size = 40 }) => {
 
 const PostCard = ({ post }) => {
   // `shared_by` present => this feed item is a re-share; the actual post
-  // content lives under `post.post` in that case (adjust to your serializer).
+  // content lives under `post.post` in that case.
   const sharedBy = post.shared_by ?? null;
   const originalPost = sharedBy ? post.post ?? post : post;
 
@@ -59,6 +60,7 @@ const PostCard = ({ post }) => {
   const [isLiking, setIsLiking] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareError, setShareError] = useState("");
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const author = originalPost.author ?? originalPost.user ?? {};
 
@@ -90,9 +92,11 @@ const PostCard = ({ post }) => {
   };
 
   const handleUnshare = async () => {
-    if (!originalPost.share_id) return;
+    // share_id lives on the top-level feed item (the wrapper), not on the
+    // nested original post — originalPost never carries it.
+    if (!post.share_id) return;
     try {
-      await unsharePost(originalPost.share_id).unwrap();
+      await unsharePost(post.share_id).unwrap();
     } catch (err) {
       console.error("Unshare failed:", err);
     }
@@ -170,10 +174,16 @@ const PostCard = ({ post }) => {
           {originalPost.likes_count ?? 0}
         </button>
 
-        <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-500">
+        {/* There is no /posts/:id route in the app router — PostDetails is a
+            modal, not a page, so it opens here rather than navigating. */}
+        <button
+          type="button"
+          onClick={() => setIsDetailsOpen(true)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-[#A855F7]"
+        >
           <FiMessageCircle size={17} />
           {originalPost.comments_count ?? 0}
-        </span>
+        </button>
 
         {originalPost.is_shared_by_me ? (
           <button
@@ -205,6 +215,13 @@ const PostCard = ({ post }) => {
           isSharing={isSharing}
           onClose={() => setIsShareModalOpen(false)}
           onConfirm={handleConfirmShare}
+        />
+      )}
+
+      {isDetailsOpen && (
+        <PostDetails
+          postId={originalPost.id}
+          onClose={() => setIsDetailsOpen(false)}
         />
       )}
     </div>

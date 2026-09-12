@@ -27,7 +27,7 @@ const ViewUserProfile = () => {
     );
   }
 
-  if (isError || !data?.profile) {
+  if (isError || !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F6F7FB] px-6">
         <div className="rounded-2xl border border-slate-200 bg-white px-8 py-10 text-center shadow-sm">
@@ -37,7 +37,7 @@ const ViewUserProfile = () => {
     );
   }
 
-  const profile = data.profile;
+  const profile = data;
   const initials = (profile.full_name || profile.username || "?").charAt(0).toUpperCase();
 
   return (

@@ -73,9 +73,9 @@ const UserProfile = () => {
 
   const profile = data.profile;
 
-  // Adjust this to whatever field actually identifies the user
-  // (e.g. profile.user, profile.user_id, profile.id — check your serializer)
-  const profileUserId = profile.user_id ?? profile.user ?? profile.id;
+  // Profile.id (UUID PK) and User.id are different rows — always use
+  // user_id here, which the serializer now exposes explicitly.
+  const profileUserId = profile.user_id;
 
   const initials = (profile.full_name || profile.username || "?")
     .charAt(0)

@@ -56,27 +56,37 @@ class CommentReplySerializer(CommentSerializer):
 class PostSerializer(serializers.ModelSerializer):
     user = PostAuthorSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
-    like_count = serializers.SerializerMethodField()
-    comment_count = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    shares_count = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
-    is_shared = serializers.SerializerMethodField()
-    share_count = serializers.SerializerMethodField()
+    is_shared_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = [
-            "id", "user", "content", "visibility", "images",
-            "like_count", "comment_count", "is_liked",
-            "is_shared", "share_count", "created_at", "updated_at",
+            "id", "user", "content", "visibility", "images", "image",
+            "likes_count", "comments_count", "is_liked",
+            "is_shared_by_me", "shares_count", "created_at", "updated_at",
         ]
 
-    def get_like_count(self, obj):
+    def get_image(self, obj):
+        # Frontend PostCard currently renders a single hero image.
+        # Use the first uploaded image (by order) until it supports a gallery.
+        first = obj.images.all().order_by("order").first()
+        if not first:
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(first.image.url) if request else first.image.url
+
+    def get_likes_count(self, obj):
         return obj.likes.count()
 
-    def get_comment_count(self, obj):
+    def get_comments_count(self, obj):
         return obj.comments.count()
 
-    def get_share_count(self, obj):
+    def get_shares_count(self, obj):
         return obj.shares.count()
 
     def _user(self):
@@ -89,11 +99,39 @@ class PostSerializer(serializers.ModelSerializer):
             return False
         return obj.likes.filter(user=user).exists()
 
-    def get_is_shared(self, obj):
+    def get_is_shared_by_me(self, obj):
         user = self._user()
         if not user or not user.is_authenticated:
             return False
         return obj.shares.filter(user=user).exists()
+
+
+class FeedItemSerializer(serializers.Serializer):
+    """
+    Wraps a single feed entry, which is either a plain Post or a re-share
+    of one. `item` is a dict: {"post": Post, "share": Share|None}.
+
+    A plain post is returned exactly as PostSerializer produces it.
+    A re-share adds `shared_by`, `share_id`, and `caption` (the resharer's
+    own caption) at the top level, and nests the full original post under
+    `post` — matching what PostCard.jsx expects.
+    """
+
+    def to_representation(self, item):
+        request = self.context.get("request")
+        post_data = PostSerializer(item["post"], context={"request": request}).data
+        share = item.get("share")
+
+        if not share:
+            return post_data
+
+        return {
+            **post_data,
+            "shared_by": PostAuthorSerializer(share.user, context={"request": request}).data,
+            "share_id": share.id,
+            "caption": share.caption,
+            "post": post_data,
+        }
 
 
 class PostCreateUpdateSerializer(serializers.ModelSerializer):

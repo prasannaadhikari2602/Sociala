@@ -6,17 +6,59 @@ from rest_framework.response import Response
 
 from apps.follows.models import Follow
 from apps.notifications.services import notify
+from apps.shares.models import Share
 
 from .models import Post, Comment, Like
 from .permissions import IsOwnerOrReadOnly
-from .serializers import PostSerializer, PostCreateUpdateSerializer, CommentSerializer
+from .serializers import (
+    PostSerializer,
+    PostCreateUpdateSerializer,
+    CommentSerializer,
+    FeedItemSerializer,
+)
+
+# Actions where get_object() just needs "can I see this post at all",
+# not "do I own it" — liking, commenting-list, and viewing any post you're
+# allowed to see (own / public / friends-if-following).
+DETAIL_VISIBILITY_ACTIONS = ["retrieve", "like", "unlike", "comments"]
+
+# Actions where ownership must NOT gate the action at all (anyone allowed
+# to see the post can like/unlike it — that's not an edit of the post).
+NO_OWNERSHIP_ACTIONS = ["like", "unlike"]
 
 
 class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
+    def get_permissions(self):
+        if self.action in NO_OWNERSHIP_ACTIONS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+
+    def _visible_to_user_queryset(self):
+        """
+        Any post the current user is actually allowed to see:
+        their own (any visibility), anyone's public post, or a friends-only
+        post from someone they follow. Used for single-object lookups
+        (like/unlike/comments/retrieve) so acting on a stranger's public
+        post (e.g. from Explore) doesn't 404 just because you don't follow them.
+        """
+        user = self.request.user
+        following_ids = Follow.objects.filter(follower=user).values_list("following_id", flat=True)
+        qs = Post.objects.filter(is_removed=False).select_related("user").prefetch_related(
+            "images", "likes", "comments", "shares"
+        )
+        return qs.filter(
+            Q(user=user)
+            | Q(visibility="public")
+            | Q(user_id__in=following_ids, visibility="friends")
+        ).distinct()
+
     def get_queryset(self):
+        if self.action in DETAIL_VISIBILITY_ACTIONS:
+            return self._visible_to_user_queryset()
+
         qs = Post.objects.filter(is_removed=False).select_related("user").prefetch_related(
             "images", "likes", "comments", "shares"
         )
@@ -28,7 +70,6 @@ class PostViewSet(viewsets.ModelViewSet):
             return qs.filter(user=user)
 
         if user_id:
-            # Someone else's profile: only public, or friends if we follow them, or all if it's me
             target_qs = qs.filter(user_id=user_id)
             if str(user.id) == str(user_id):
                 return target_qs
@@ -37,11 +78,73 @@ class PostViewSet(viewsets.ModelViewSet):
                 return target_qs.filter(Q(visibility="public") | Q(visibility="friends"))
             return target_qs.filter(visibility="public")
 
-        # Default feed: own posts + posts of people the user follows
         following_ids = Follow.objects.filter(follower=user).values_list("following_id", flat=True)
         return qs.filter(
             Q(user=user) | Q(user_id__in=following_ids, visibility__in=["public", "friends"])
         ).distinct()
+
+    def _post_visible(self, post, user, following_ids):
+        if post.user_id == user.id:
+            return True
+        if post.visibility == "public":
+            return True
+        if post.visibility == "friends" and post.user_id in following_ids:
+            return True
+        return False
+
+    def _build_feed(self, request, own_only):
+        """
+        Merge Post rows and Share rows into a single, date-sorted feed.
+        Share is a separate model/table, so it's never picked up by a
+        plain Post queryset — this is what makes shares actually show up.
+        """
+        user = request.user
+        following_ids = set(
+            Follow.objects.filter(follower=user).values_list("following_id", flat=True)
+        )
+
+        if own_only:
+            post_qs = Post.objects.filter(is_removed=False, user=user)
+            share_qs = list(
+                Share.objects.filter(user=user).select_related("post", "post__user")
+            )
+        else:
+            visible_share_user_ids = following_ids | {user.id}
+            post_qs = Post.objects.filter(is_removed=False).filter(
+                Q(user=user) | Q(user_id__in=following_ids, visibility__in=["public", "friends"])
+            )
+            share_qs = [
+                s for s in Share.objects.filter(
+                    user_id__in=visible_share_user_ids
+                ).select_related("post", "post__user")
+                if not s.post.is_removed and self._post_visible(s.post, user, following_ids)
+            ]
+
+        post_qs = post_qs.select_related("user").prefetch_related(
+            "images", "likes", "comments", "shares"
+        ).distinct()
+
+        items = [{"post": p, "share": None, "sort_date": p.created_at} for p in post_qs]
+        items += [{"post": s.post, "share": s, "sort_date": s.created_at} for s in share_qs]
+        items.sort(key=lambda x: x["sort_date"], reverse=True)
+
+        return FeedItemSerializer(items, many=True, context={"request": request}).data
+
+    def list(self, request, *args, **kwargs):
+        mine = request.query_params.get("mine")
+        user_id = request.query_params.get("user")
+        visibility = request.query_params.get("visibility")
+
+        # Explore (?visibility=public&search=...) and a specific user's
+        # profile posts (?user=<id>) keep the original post-only,
+        # paginated behavior — shares aren't merged into those views.
+        if visibility or user_id:
+            return super().list(request, *args, **kwargs)
+
+        if mine == "true":
+            return Response(self._build_feed(request, own_only=True))
+
+        return Response(self._build_feed(request, own_only=False))
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
@@ -81,13 +184,13 @@ class PostViewSet(viewsets.ModelViewSet):
                 recipient=post.user, actor=request.user,
                 verb="like", target_post=post,
             )
-        return Response({"is_liked": True, "like_count": post.likes.count()})
+        return Response({"is_liked": True, "likes_count": post.likes.count()})
 
     @action(detail=True, methods=["post"], url_path="unlike")
     def unlike(self, request, pk=None):
         post = self.get_object()
         Like.objects.filter(user=request.user, post=post).delete()
-        return Response({"is_liked": False, "like_count": post.likes.count()})
+        return Response({"is_liked": False, "likes_count": post.likes.count()})
 
     @action(detail=True, methods=["get"], url_path="comments")
     def comments(self, request, pk=None):

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FiX, FiUserPlus, FiUserMinus } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
 
@@ -14,21 +15,32 @@ const FollowListPage = ({ type, userId, onClose }) => {
   const {
     data: followersData,
     isLoading: followersLoading,
-  } = useGetFollowersQuery(userId, { skip: !isFollowers });
+    isError: followersError,
+  } = useGetFollowersQuery(userId, { skip: !isFollowers || !userId });
 
   const {
     data: followingData,
     isLoading: followingLoading,
-  } = useGetFollowingQuery(userId, { skip: isFollowers });
+    isError: followingError,
+  } = useGetFollowingQuery(userId, { skip: isFollowers || !userId });
 
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
 
+  // Tracks which specific person's follow button is mid-request, so only
+  // that row disables/shows a pending state instead of the whole list.
+  const [pendingUserId, setPendingUserId] = useState(null);
+
   const isLoading = isFollowers ? followersLoading : followingLoading;
+  const isError = isFollowers ? followersError : followingError;
   const rawList = isFollowers ? followersData : followingData;
-  const list = Array.isArray(rawList) ? rawList : rawList?.results ?? [];
+  const list = Array.isArray(rawList)
+    ? rawList
+    : rawList?.results ?? rawList?.followers ?? rawList?.following ?? [];
 
   const handleToggleFollow = async (targetUser) => {
+    if (pendingUserId) return;
+    setPendingUserId(targetUser.id);
     try {
       if (targetUser.is_following) {
         await unfollowUser(targetUser.id).unwrap();
@@ -37,6 +49,8 @@ const FollowListPage = ({ type, userId, onClose }) => {
       }
     } catch (err) {
       console.error("Follow action failed:", err);
+    } finally {
+      setPendingUserId(null);
     }
   };
 
@@ -78,76 +92,91 @@ const FollowListPage = ({ type, userId, onClose }) => {
             </div>
           )}
 
-          {!isLoading && list.length === 0 && (
+          {!isLoading && isError && (
+            <p className="px-3 py-10 text-center text-sm text-red-500">
+              Couldn't load {type}. Please try again.
+            </p>
+          )}
+
+          {!isLoading && !isError && list.length === 0 && (
             <p className="px-3 py-10 text-center text-sm text-slate-500">
               No {type} yet.
             </p>
           )}
 
           {!isLoading &&
-            list.map((person) => (
-              <div
-                key={person.id}
-                className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-slate-50"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-slate-100">
-                    {person.profile_image ? (
-                      <img
-                        src={person.profile_image}
-                        alt={person.full_name || person.username}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-purple-100 to-purple-50 text-sm font-bold text-[#A855F7]">
-                        {(person.full_name || person.username || "?")
-                          .charAt(0)
-                          .toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+            !isError &&
+            list.map((person) => {
+              const isPending = pendingUserId === person.id;
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1">
-                      <p className="truncate text-sm font-semibold text-[#12111A]">
-                        {person.full_name || person.username}
-                      </p>
-                      {person.is_verified && (
-                        <MdVerified size={14} className="text-[#A855F7]" />
+              return (
+                <div
+                  key={person.id}
+                  className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-slate-50"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-slate-100">
+                      {person.profile_image ? (
+                        <img
+                          src={person.profile_image}
+                          alt={person.full_name || person.username}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-purple-100 to-purple-50 text-sm font-bold text-[#A855F7]">
+                          {(person.full_name || person.username || "?")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
                       )}
                     </div>
-                    <p className="truncate text-xs text-slate-500">
-                      @{person.username}
-                    </p>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => handleToggleFollow(person)}
-                  className={`
-                    flex shrink-0 items-center gap-1.5
-                    rounded-lg px-3 py-1.5
-                    text-xs font-semibold
-                    transition
-                    ${
-                      person.is_following
-                        ? "border border-slate-200 text-slate-600 hover:bg-slate-100"
-                        : "bg-[#A855F7] text-white hover:bg-[#9333EA]"
-                    }
-                  `}
-                >
-                  {person.is_following ? (
-                    <>
-                      <FiUserMinus size={13} /> Unfollow
-                    </>
-                  ) : (
-                    <>
-                      <FiUserPlus size={13} /> Follow
-                    </>
-                  )}
-                </button>
-              </div>
-            ))}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <p className="truncate text-sm font-semibold text-[#12111A]">
+                          {person.full_name || person.username}
+                        </p>
+                        {person.is_verified && (
+                          <MdVerified size={14} className="text-[#A855F7]" />
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-slate-500">
+                        @{person.username}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleToggleFollow(person)}
+                    disabled={isPending}
+                    className={`
+                      flex shrink-0 items-center gap-1.5
+                      rounded-lg px-3 py-1.5
+                      text-xs font-semibold
+                      transition
+                      disabled:opacity-60
+                      ${
+                        person.is_following
+                          ? "border border-slate-200 text-slate-600 hover:bg-slate-100"
+                          : "bg-[#A855F7] text-white hover:bg-[#9333EA]"
+                      }
+                    `}
+                  >
+                    {isPending ? (
+                      "..."
+                    ) : person.is_following ? (
+                      <>
+                        <FiUserMinus size={13} /> Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <FiUserPlus size={13} /> Follow
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>
