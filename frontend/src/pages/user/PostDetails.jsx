@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   FiX,
   FiHeart,
@@ -7,6 +8,7 @@ import {
   FiTrash2,
   FiCheck,
   FiImage,
+  FiFlag,
 } from "react-icons/fi";
 
 import {
@@ -16,6 +18,7 @@ import {
   useUpdatePostMutation,
   useDeletePostMutation,
 } from "../../features/posts/postApi";
+import { openReportModal } from "../../features/reports/reportSlice";
 import CommentList from "./CommentList";
 
 const formatDate = (dateString) => {
@@ -28,6 +31,8 @@ const formatDate = (dateString) => {
 };
 
 const PostDetails = ({ postId, onClose }) => {
+  const dispatch = useDispatch();
+
   const {
     data: post,
     isLoading,
@@ -167,6 +172,15 @@ const PostDetails = ({ postId, onClose }) => {
                 >
                   <FiTrash2 size={14} />
                   Delete
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => dispatch(openReportModal(post.id))}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100"
+                >
+                  <FiFlag size={14} />
+                  Report
                 </button>
               </>
             )}
@@ -318,8 +332,6 @@ const PostDetails = ({ postId, onClose }) => {
                       </span>
                     </div>
 
-                    {/* Comments were never actually rendered here before —
-                        CommentList exists and works, it just wasn't mounted. */}
                     <div className="mt-4 border-t border-slate-100 pt-4">
                       <CommentList postId={post.id} />
                     </div>

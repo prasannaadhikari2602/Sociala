@@ -19,22 +19,41 @@ const ReportPostModal = () => {
   const postId = useSelector((s) => s.reports.reportingPostId);
   const [reason, setReason] = useState("spam");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
   const [reportPost, { isLoading }] = useReportPostMutation();
 
   if (!postId) return null;
 
-  const submit = async () => {
-    await reportPost({ post: postId, reason, description });
+  const handleClose = () => {
     dispatch(closeReportModal());
+    setReason("spam");
     setDescription("");
+    setError("");
+  };
+
+  const submit = async () => {
+    setError("");
+    try {
+      await reportPost({ post: postId, reason, description }).unwrap();
+      handleClose();
+    } catch (err) {
+      console.error("Report post failed:", err);
+      setError("Couldn't submit this report. Please try again.");
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={handleClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl bg-white p-5"
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold">Report this post</h2>
-          <button onClick={() => dispatch(closeReportModal())}>
+          <button onClick={handleClose} aria-label="Close">
             <FiX size={20} />
           </button>
         </div>
@@ -66,6 +85,12 @@ const ReportPostModal = () => {
           className="mt-3 w-full resize-none rounded-lg border border-slate-200 p-3 text-sm"
           rows={3}
         />
+
+        {error && (
+          <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           onClick={submit}

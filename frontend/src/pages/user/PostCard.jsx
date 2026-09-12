@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FiHeart, FiMessageCircle, FiShare2, FiRepeat } from "react-icons/fi";
+import { useDispatch } from "react-redux";
+import { FiHeart, FiMessageCircle, FiShare2, FiRepeat, FiMoreHorizontal, FiFlag } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
 
 import {
@@ -10,6 +11,7 @@ import {
   useSharePostMutation,
   useUnsharePostMutation,
 } from "../../features/shares/shareApi";
+import { openReportModal } from "../../features/reports/reportSlice";
 import ShareComposerModal from "./ShareComposerModal";
 import PostDetails from "./PostDetails";
 
@@ -47,6 +49,8 @@ const Avatar = ({ user, size = 40 }) => {
 };
 
 const PostCard = ({ post }) => {
+  const dispatch = useDispatch();
+
   // `shared_by` present => this feed item is a re-share; the actual post
   // content lives under `post.post` in that case.
   const sharedBy = post.shared_by ?? null;
@@ -61,6 +65,7 @@ const PostCard = ({ post }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareError, setShareError] = useState("");
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const author = originalPost.author ?? originalPost.user ?? {};
 
@@ -104,7 +109,6 @@ const PostCard = ({ post }) => {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-
       {/* "Shared by" banner */}
       {sharedBy && (
         <div className="mb-3 flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -116,21 +120,56 @@ const PostCard = ({ post }) => {
       )}
 
       {/* Author row */}
-      <div className="flex items-center gap-3">
-        <Avatar user={author} />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar user={author} />
 
-        <div className="min-w-0">
-          <div className="flex items-center gap-1">
-            <p className="truncate text-sm font-semibold text-[#12111A]">
-              {author.full_name || author.username}
+          <div className="min-w-0">
+            <div className="flex items-center gap-1">
+              <p className="truncate text-sm font-semibold text-[#12111A]">
+                {author.full_name || author.username}
+              </p>
+              {author.is_verified && (
+                <MdVerified size={13} className="text-[#A855F7]" />
+              )}
+            </div>
+            <p className="text-xs text-slate-400">
+              {formatDate(originalPost.created_at)}
             </p>
-            {author.is_verified && (
-              <MdVerified size={13} className="text-[#A855F7]" />
-            )}
           </div>
-          <p className="text-xs text-slate-400">
-            {formatDate(originalPost.created_at)}
-          </p>
+        </div>
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((v) => !v)}
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Post options"
+          >
+            <FiMoreHorizontal size={18} />
+          </button>
+
+          {isMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setIsMenuOpen(false)}
+              />
+              <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    dispatch(openReportModal(originalPost.id));
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-red-500 transition hover:bg-red-50"
+                >
+                  <FiFlag size={14} />
+                  Report post
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
