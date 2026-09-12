@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { FiGrid, FiList } from "react-icons/fi";
 import { useGetMyPostsQuery } from "../../features/posts/postApi";
-import PostCard from "../shared/PostCard";
-import PostComposer from "../shared/PostComposer";
+import PostCard from "./PostCard";
+import PostComposer from "./PostComposer";
 
 const Posts = () => {
   const { data: posts, isLoading, isError } = useGetMyPostsQuery();

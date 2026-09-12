@@ -4,7 +4,7 @@ import { selectIsAuthenticated } from "../features/auth/authSlice";
 import { useGetMyProfileQuery } from "../features/profiles/profileApi";
 import UserNavbar from "../components/UserNavbar";
 import PostDetails from "../pages/user/PostDetails";
-import ReportPostModal from "../pages/shared/ReportPostModal";
+import ReportPostModal from "../pages/user/ReportPostModal";
 
 const UserLayout = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);

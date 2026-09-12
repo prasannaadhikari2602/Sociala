@@ -5,7 +5,7 @@ import { MdVerified } from "react-icons/md";
 import { useGetUserProfileQuery } from "../../features/profiles/profileApi";
 import { useGetUserPostsQuery } from "../../features/posts/postApi";
 import { useFollowUserMutation, useUnfollowUserMutation } from "../../features/follows/followApi";
-import PostCard from "../shared/PostCard";
+import PostCard from "./PostCard";
 
 const formatJoinDate = (dateString) => {
   if (!dateString) return "";

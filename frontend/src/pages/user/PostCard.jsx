@@ -1,0 +1,214 @@
+import { useState } from "react";
+import { FiHeart, FiMessageCircle, FiShare2, FiRepeat } from "react-icons/fi";
+import { MdVerified } from "react-icons/md";
+
+import {
+  useLikePostMutation,
+  useUnlikePostMutation,
+} from "../../features/posts/postApi";
+import {
+  useSharePostMutation,
+  useUnsharePostMutation,
+} from "../../features/shares/shareApi";
+import ShareComposerModal from "./ShareComposerModal";
+
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const Avatar = ({ user, size = 40 }) => {
+  const initials = (user?.full_name || user?.username || "?")
+    .charAt(0)
+    .toUpperCase();
+
+  return (
+    <div
+      style={{ height: size, width: size }}
+      className="overflow-hidden rounded-full bg-slate-100 shrink-0"
+    >
+      {user?.profile_image ? (
+        <img
+          src={user.profile_image}
+          alt={user.full_name || user.username}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-purple-100 to-purple-50 text-sm font-bold text-[#A855F7]">
+          {initials}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PostCard = ({ post }) => {
+  // `shared_by` present => this feed item is a re-share; the actual post
+  // content lives under `post.post` in that case (adjust to your serializer).
+  const sharedBy = post.shared_by ?? null;
+  const originalPost = sharedBy ? post.post ?? post : post;
+
+  const [likePost] = useLikePostMutation();
+  const [unlikePost] = useUnlikePostMutation();
+  const [sharePost, { isLoading: isSharing }] = useSharePostMutation();
+  const [unsharePost] = useUnsharePostMutation();
+
+  const [isLiking, setIsLiking] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareError, setShareError] = useState("");
+
+  const author = originalPost.author ?? originalPost.user ?? {};
+
+  const handleToggleLike = async () => {
+    if (isLiking) return;
+    setIsLiking(true);
+    try {
+      if (originalPost.is_liked) {
+        await unlikePost(originalPost.id).unwrap();
+      } else {
+        await likePost(originalPost.id).unwrap();
+      }
+    } catch (err) {
+      console.error("Like action failed:", err);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleConfirmShare = async (caption) => {
+    setShareError("");
+    try {
+      await sharePost({ post: originalPost.id, caption }).unwrap();
+      setIsShareModalOpen(false);
+    } catch (err) {
+      console.error("Share failed:", err);
+      setShareError("Couldn't share this post. Please try again.");
+    }
+  };
+
+  const handleUnshare = async () => {
+    if (!originalPost.share_id) return;
+    try {
+      await unsharePost(originalPost.share_id).unwrap();
+    } catch (err) {
+      console.error("Unshare failed:", err);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+
+      {/* "Shared by" banner */}
+      {sharedBy && (
+        <div className="mb-3 flex items-center gap-2 text-xs font-medium text-slate-500">
+          <FiRepeat size={14} className="text-[#A855F7]" />
+          <span>
+            {sharedBy.full_name || sharedBy.username} shared this
+          </span>
+        </div>
+      )}
+
+      {/* Author row */}
+      <div className="flex items-center gap-3">
+        <Avatar user={author} />
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-1">
+            <p className="truncate text-sm font-semibold text-[#12111A]">
+              {author.full_name || author.username}
+            </p>
+            {author.is_verified && (
+              <MdVerified size={13} className="text-[#A855F7]" />
+            )}
+          </div>
+          <p className="text-xs text-slate-400">
+            {formatDate(originalPost.created_at)}
+          </p>
+        </div>
+      </div>
+
+      {/* Optional share caption (the re-sharer's own comment) */}
+      {sharedBy && post.caption && (
+        <p className="mt-3 text-sm leading-6 text-slate-700">{post.caption}</p>
+      )}
+
+      {/* Original post content, boxed if it's a share */}
+      <div className={sharedBy ? "mt-3 rounded-xl border border-slate-100 p-3" : "mt-3"}>
+        {(originalPost.caption || originalPost.content) && (
+          <p className="text-sm leading-6 text-slate-700">
+            {originalPost.caption || originalPost.content}
+          </p>
+        )}
+
+        {originalPost.image && (
+          <div className="mt-3 overflow-hidden rounded-xl bg-slate-100">
+            <img
+              src={originalPost.image}
+              alt={originalPost.caption || "Post"}
+              className="max-h-[420px] w-full object-cover"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="mt-4 flex items-center gap-5 border-t border-slate-100 pt-3">
+        <button
+          type="button"
+          onClick={handleToggleLike}
+          disabled={isLiking}
+          className={`
+            flex items-center gap-1.5 text-sm font-semibold
+            transition
+            ${originalPost.is_liked ? "text-[#A855F7]" : "text-slate-500 hover:text-[#A855F7]"}
+          `}
+        >
+          <FiHeart size={17} fill={originalPost.is_liked ? "currentColor" : "none"} />
+          {originalPost.likes_count ?? 0}
+        </button>
+
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-500">
+          <FiMessageCircle size={17} />
+          {originalPost.comments_count ?? 0}
+        </span>
+
+        {originalPost.is_shared_by_me ? (
+          <button
+            type="button"
+            onClick={handleUnshare}
+            className="ml-auto flex items-center gap-1.5 text-sm font-semibold text-[#A855F7]"
+          >
+            <FiShare2 size={16} />
+            Shared
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="ml-auto flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-[#A855F7]"
+          >
+            <FiShare2 size={16} />
+            Share
+          </button>
+        )}
+      </div>
+
+      {shareError && (
+        <p className="mt-2 text-xs text-red-500">{shareError}</p>
+      )}
+
+      {isShareModalOpen && (
+        <ShareComposerModal
+          isSharing={isSharing}
+          onClose={() => setIsShareModalOpen(false)}
+          onConfirm={handleConfirmShare}
+        />
+      )}
+    </div>
+  );
+};
+
+export default PostCard;

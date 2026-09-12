@@ -13,12 +13,26 @@ export const shareApi = baseApi.injectEndpoints({
         method: "POST",
         body: { post, caption },
       }),
-      invalidatesTags: [{ type: "Share", id: "MINE" }, { type: "Post" }],
+      // Invalidate the feed (so the new share appears for followers),
+      // "my shares" (profile), and the underlying Post (share count/flags).
+      invalidatesTags: [
+        { type: "Share", id: "MINE" },
+        { type: "Share", id: "FEED" },
+        { type: "Post", id: "FEED" },
+        { type: "Post", id: "MINE" },
+        { type: "Post" },
+      ],
     }),
 
     unsharePost: builder.mutation({
       query: (shareId) => ({ url: `api/shares/${shareId}/`, method: "DELETE" }),
-      invalidatesTags: [{ type: "Share", id: "MINE" }, { type: "Post" }],
+      invalidatesTags: [
+        { type: "Share", id: "MINE" },
+        { type: "Share", id: "FEED" },
+        { type: "Post", id: "FEED" },
+        { type: "Post", id: "MINE" },
+        { type: "Post" },
+      ],
     }),
   }),
   overrideExisting: false,

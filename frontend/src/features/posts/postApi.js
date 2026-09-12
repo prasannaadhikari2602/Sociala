@@ -6,21 +6,43 @@ export const postApi = baseApi.injectEndpoints({
       query: () => "api/posts/posts/",
       providesTags: (result) =>
         result
-          ? [...result.map((p) => ({ type: "Post", id: p.id })), { type: "Post", id: "FEED" }]
-          : [{ type: "Post", id: "FEED" }],
+          ? [
+              ...result.map((p) => ({ type: "Post", id: p.id })),
+              { type: "Post", id: "FEED" },
+              { type: "Share", id: "FEED" },
+            ]
+          : [{ type: "Post", id: "FEED" }, { type: "Share", id: "FEED" }],
     }),
 
     getMyPosts: builder.query({
       query: () => "api/posts/posts/?mine=true",
       providesTags: (result) =>
         result
-          ? [...result.map((p) => ({ type: "Post", id: p.id })), { type: "Post", id: "MINE" }]
-          : [{ type: "Post", id: "MINE" }],
+          ? [
+              ...result.map((p) => ({ type: "Post", id: p.id })),
+              { type: "Post", id: "MINE" },
+              { type: "Share", id: "MINE" },
+            ]
+          : [{ type: "Post", id: "MINE" }, { type: "Share", id: "MINE" }],
     }),
 
     getUserPosts: builder.query({
       query: (userId) => `api/posts/posts/?user=${userId}`,
       providesTags: (result, err, userId) => [{ type: "Post", id: `USER-${userId}` }],
+    }),
+
+    // Only public posts, searchable, paginated 20/page.
+    // Backend expected to return { count, next, previous, results }
+    explorePosts: builder.query({
+      query: ({ search = "", page = 1 } = {}) =>
+        `api/posts/posts/?visibility=public&search=${encodeURIComponent(search)}&page=${page}&page_size=20`,
+      providesTags: (result) =>
+        result?.results
+          ? [
+              ...result.results.map((p) => ({ type: "Post", id: p.id })),
+              { type: "Post", id: "EXPLORE" },
+            ]
+          : [{ type: "Post", id: "EXPLORE" }],
     }),
 
     getPost: builder.query({
@@ -43,12 +65,22 @@ export const postApi = baseApi.injectEndpoints({
         method: "PATCH",
         body: formData,
       }),
-      invalidatesTags: (result, err, { id }) => [{ type: "Post", id }],
+      invalidatesTags: (result, err, { id }) => [
+        { type: "Post", id },
+        { type: "Post", id: "FEED" },
+        { type: "Post", id: "MINE" },
+      ],
     }),
 
     deletePost: builder.mutation({
       query: (id) => ({ url: `api/posts/posts/${id}/`, method: "DELETE" }),
-      invalidatesTags: [{ type: "Post", id: "FEED" }, { type: "Post", id: "MINE" }],
+      invalidatesTags: [
+        { type: "Post", id: "FEED" },
+        { type: "Post", id: "MINE" },
+        { type: "Post", id: "EXPLORE" },
+        { type: "Share", id: "FEED" },
+        { type: "Share", id: "MINE" },
+      ],
     }),
 
     likePost: builder.mutation({
@@ -68,6 +100,7 @@ export const {
   useGetFeedQuery,
   useGetMyPostsQuery,
   useGetUserPostsQuery,
+  useExplorePostsQuery,
   useGetPostQuery,
   useCreatePostMutation,
   useUpdatePostMutation,

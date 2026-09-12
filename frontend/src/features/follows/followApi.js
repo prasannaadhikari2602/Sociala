@@ -2,8 +2,11 @@ import { baseApi } from "../../services/api/baseApi";
 
 export const followApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Now supports pagination (20/page) — backend expected to return
+    // a paginated shape: { count, next, previous, results }
     exploreUsers: builder.query({
-      query: (search = "") => `api/follows/explore/?q=${encodeURIComponent(search)}`,
+      query: ({ search = "", page = 1 } = {}) =>
+        `api/follows/explore/?q=${encodeURIComponent(search)}&page=${page}&page_size=20`,
       providesTags: [{ type: "User", id: "EXPLORE" }],
     }),
 

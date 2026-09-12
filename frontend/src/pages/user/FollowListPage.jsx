@@ -1,29 +1,154 @@
-import { useParams, Link } from "react-router-dom";
-import { useGetFollowersQuery, useGetFollowingQuery } from "../../features/follows/followApi";
+import { FiX, FiUserPlus, FiUserMinus } from "react-icons/fi";
+import { MdVerified } from "react-icons/md";
 
-const FollowListPage = ({ mode }) => {
-  const { userId } = useParams();
-  const followersQ = useGetFollowersQuery(userId, { skip: mode !== "followers" });
-  const followingQ = useGetFollowingQuery(userId, { skip: mode !== "following" });
-  const { data, isLoading } = mode === "followers" ? followersQ : followingQ;
+import {
+  useGetFollowersQuery,
+  useGetFollowingQuery,
+  useFollowUserMutation,
+  useUnfollowUserMutation,
+} from "../../features/follows/followApi";
+
+const FollowListPage = ({ type, userId, onClose }) => {
+  const isFollowers = type === "followers";
+
+  const {
+    data: followersData,
+    isLoading: followersLoading,
+  } = useGetFollowersQuery(userId, { skip: !isFollowers });
+
+  const {
+    data: followingData,
+    isLoading: followingLoading,
+  } = useGetFollowingQuery(userId, { skip: isFollowers });
+
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
+
+  const isLoading = isFollowers ? followersLoading : followingLoading;
+  const rawList = isFollowers ? followersData : followingData;
+  const list = Array.isArray(rawList) ? rawList : rawList?.results ?? [];
+
+  const handleToggleFollow = async (targetUser) => {
+    try {
+      if (targetUser.is_following) {
+        await unfollowUser(targetUser.id).unwrap();
+      } else {
+        await followUser(targetUser.id).unwrap();
+      }
+    } catch (err) {
+      console.error("Follow action failed:", err);
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <h1 className="text-lg font-bold capitalize">{mode}</h1>
-      <div className="mt-4 divide-y divide-slate-100">
-        {isLoading && <p className="py-6 text-center text-sm text-slate-400">Loading...</p>}
-        {data?.map((u) => (
-          <Link key={u.id} to={`/profile/${u.id}`} className="flex items-center gap-3 py-4">
-            <img src={u.profile_image || "/default-avatar.png"} className="h-11 w-11 rounded-full object-cover" alt="" />
-            <div>
-              <p className="text-sm font-semibold">{u.full_name}</p>
-              <p className="text-xs text-slate-500">@{u.username}</p>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="
+          flex w-full max-w-md flex-col
+          rounded-t-2xl sm:rounded-2xl
+          bg-white
+          shadow-xl
+          max-h-[80vh]
+        "
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h2 className="text-base font-bold text-[#12111A] capitalize">
+            {type}
+          </h2>
+
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100"
+            aria-label="Close"
+          >
+            <FiX size={18} />
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-2 py-2">
+          {isLoading && (
+            <div className="flex items-center justify-center py-10">
+              <div className="h-7 w-7 animate-spin rounded-full border-4 border-purple-200 border-t-[#A855F7]" />
             </div>
-          </Link>
-        ))}
-        {!isLoading && !data?.length && (
-          <p className="py-8 text-center text-sm text-slate-400">Nobody here yet.</p>
-        )}
+          )}
+
+          {!isLoading && list.length === 0 && (
+            <p className="px-3 py-10 text-center text-sm text-slate-500">
+              No {type} yet.
+            </p>
+          )}
+
+          {!isLoading &&
+            list.map((person) => (
+              <div
+                key={person.id}
+                className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-slate-50"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-slate-100">
+                    {person.profile_image ? (
+                      <img
+                        src={person.profile_image}
+                        alt={person.full_name || person.username}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-purple-100 to-purple-50 text-sm font-bold text-[#A855F7]">
+                        {(person.full_name || person.username || "?")
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <p className="truncate text-sm font-semibold text-[#12111A]">
+                        {person.full_name || person.username}
+                      </p>
+                      {person.is_verified && (
+                        <MdVerified size={14} className="text-[#A855F7]" />
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-slate-500">
+                      @{person.username}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleToggleFollow(person)}
+                  className={`
+                    flex shrink-0 items-center gap-1.5
+                    rounded-lg px-3 py-1.5
+                    text-xs font-semibold
+                    transition
+                    ${
+                      person.is_following
+                        ? "border border-slate-200 text-slate-600 hover:bg-slate-100"
+                        : "bg-[#A855F7] text-white hover:bg-[#9333EA]"
+                    }
+                  `}
+                >
+                  {person.is_following ? (
+                    <>
+                      <FiUserMinus size={13} /> Unfollow
+                    </>
+                  ) : (
+                    <>
+                      <FiUserPlus size={13} /> Follow
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   );
