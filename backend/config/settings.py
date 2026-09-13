@@ -305,6 +305,7 @@ DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL"
 )
 
+EMAIL_TIMEOUT = 10
 
 # ============================================================
 # INTERNATIONALIZATION
