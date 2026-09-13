@@ -1,24 +1,42 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { logout } from "../../features/auth/authSlice";
 
-const getApiBaseUrl = () => {
-  const { hostname } = window.location;
+// ============================================================
+// API BASE URL
+// ============================================================
+//
+// Local development:
+// VITE_API_URL=http://192.168.18.9:8000
+//
+// Production (Vercel):
+// VITE_API_URL=https://sociala-backend.onrender.com
+//
 
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return import.meta.env.VITE_API_URL || "https://sociala-backend.onrender.com";
-  }
-
-  return import.meta.env.VITE_API_LAN_URL || "http://192.168.18.9:8000";
-};
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: getApiBaseUrl(),
+  baseUrl: API_BASE_URL,
   credentials: "include",
 });
 
-const baseQueryWithReauth = async (args, api, extraOptions) => {
-  const result = await baseQuery(args, api, extraOptions);
 
+// ============================================================
+// RE-AUTHENTICATION
+// ============================================================
+
+const baseQueryWithReauth = async (
+  args,
+  api,
+  extraOptions
+) => {
+  const result = await baseQuery(
+    args,
+    api,
+    extraOptions
+  );
+
+  // If access token is invalid/expired,
+  // log the user out.
   if (result?.error?.status === 401) {
     api.dispatch(logout());
   }
@@ -26,9 +44,16 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   return result;
 };
 
+
+// ============================================================
+// BASE API
+// ============================================================
+
 export const baseApi = createApi({
   reducerPath: "api",
+
   baseQuery: baseQueryWithReauth,
+
   tagTypes: [
     "User",
     "Profile",
@@ -40,5 +65,7 @@ export const baseApi = createApi({
     "Share",
     "FollowList",
   ],
+
   endpoints: () => ({}),
 });
+

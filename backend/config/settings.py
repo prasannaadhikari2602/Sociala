@@ -5,11 +5,12 @@ import os
 
 
 # ============================================================
-# BASE
+# BASE DIRECTORY
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env file for local development
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -23,15 +24,14 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 
 # ============================================================
-# HOSTS
+# ALLOWED HOSTS
 # ============================================================
 
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "https://sociala-frontend.vercel.app/",
     os.getenv("LAN_IP", "192.168.18.9"),
-    "sociala-backend.onrender.com"
+    "sociala-backend.onrender.com",
 ]
 
 
@@ -39,11 +39,13 @@ ALLOWED_HOSTS = [
 # FRONTEND URLS
 # ============================================================
 
+# Production React frontend
 FRONTEND_URL = os.getenv(
     "FRONTEND_URL",
-    "https://sociala-frontend.vercel.app/",
+    "https://sociala-frontend.vercel.app",
 )
 
+# Local React frontend
 FRONTEND_LAN_URL = os.getenv(
     "FRONTEND_LAN_URL",
     "http://192.168.18.9:5173",
@@ -55,11 +57,7 @@ FRONTEND_LAN_URL = os.getenv(
 # ============================================================
 
 INSTALLED_APPS = [
-
-    # --------------------------------------------------------
     # Django
-    # --------------------------------------------------------
-
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -67,18 +65,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # --------------------------------------------------------
     # Third-party
-    # --------------------------------------------------------
-
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
 
-    # --------------------------------------------------------
     # Local apps
-    # --------------------------------------------------------
-
     "apps.accounts.apps.AccountsConfig",
     "apps.profiles.apps.ProfilesConfig",
     "apps.reports.apps.ReportsConfig",
@@ -101,8 +93,6 @@ AUTH_USER_MODEL = "accounts.User"
 # ============================================================
 
 MIDDLEWARE = [
-
-    # CORS must be near the top
     "corsheaders.middleware.CorsMiddleware",
 
     "django.middleware.security.SecurityMiddleware",
@@ -135,7 +125,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ============================================================
 
 TEMPLATES = [
-
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
 
@@ -144,9 +133,7 @@ TEMPLATES = [
         "APP_DIRS": True,
 
         "OPTIONS": {
-
             "context_processors": [
-
                 "django.template.context_processors.request",
 
                 "django.contrib.auth.context_processors.auth",
@@ -163,14 +150,11 @@ TEMPLATES = [
 # ============================================================
 
 CORS_ALLOWED_ORIGINS = [
-
-    # React on computer
     FRONTEND_URL,
-
-    # React on phone through LAN
     FRONTEND_LAN_URL,
 ]
 
+# Required because JWT cookies are sent with requests
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -179,25 +163,17 @@ CORS_ALLOW_CREDENTIALS = True
 # ============================================================
 
 CSRF_TRUSTED_ORIGINS = [
-
-    # React on computer
     FRONTEND_URL,
-
-    # React on phone through LAN
     FRONTEND_LAN_URL,
-    
-     "https://sociala-backend.onrender.com",
 ]
 
 
 # ============================================================
-# DATABASE - POSTGRESQL
+# DATABASE - POSTGRESQL / SUPABASE
 # ============================================================
 
 DATABASES = {
-
     "default": {
-
         "ENGINE": "django.db.backends.postgresql",
 
         "NAME": os.getenv("DB_NAME"),
@@ -206,15 +182,9 @@ DATABASES = {
 
         "PASSWORD": os.getenv("DB_PASSWORD"),
 
-        "HOST": os.getenv(
-            "DB_HOST",
-            "localhost",
-        ),
+        "HOST": os.getenv("DB_HOST", "localhost"),
 
-        "PORT": os.getenv(
-            "DB_PORT",
-            "5432",
-        ),
+        "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
 
@@ -224,28 +194,24 @@ DATABASES = {
 # ============================================================
 
 AUTH_PASSWORD_VALIDATORS = [
-
     {
         "NAME": (
             "django.contrib.auth.password_validation."
             "UserAttributeSimilarityValidator"
         ),
     },
-
     {
         "NAME": (
             "django.contrib.auth.password_validation."
             "MinimumLengthValidator"
         ),
     },
-
     {
         "NAME": (
             "django.contrib.auth.password_validation."
             "CommonPasswordValidator"
         ),
     },
-
     {
         "NAME": (
             "django.contrib.auth.password_validation."
@@ -275,64 +241,45 @@ REST_FRAMEWORK = {
 # ============================================================
 
 SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
 
-    # Access token expires after 15 minutes
-    "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=15
-    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 
-    # Refresh token expires after 7 days
-    "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=7
-    ),
-
-    # Generate a new refresh token when refreshing
     "ROTATE_REFRESH_TOKENS": True,
 
-    # Blacklist the old refresh token
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
 
 # ============================================================
-# JWT HTTP-ONLY COOKIES
+# JWT COOKIE SETTINGS
 # ============================================================
 
 AUTH_COOKIE_ACCESS = "access_token"
 
 AUTH_COOKIE_REFRESH = "refresh_token"
 
-
-# Prevent JavaScript from accessing JWT cookies
 AUTH_COOKIE_HTTP_ONLY = True
 
-
-# ------------------------------------------------------------
-# Local development
-# ------------------------------------------------------------
-# False because you are using HTTP.
+# Local:
+#     DEBUG=True  -> False
 #
-# Production with HTTPS:
-# AUTH_COOKIE_SECURE = True
-# ------------------------------------------------------------
+# Render:
+#     DEBUG=False -> True
+#
+# This is required for HTTPS cookies in production.
+AUTH_COOKIE_SECURE = not DEBUG
 
-AUTH_COOKIE_SECURE = False
-
-
-# ------------------------------------------------------------
-# Cookie SameSite policy
-# ------------------------------------------------------------
-
-AUTH_COOKIE_SAMESITE = "Lax"
+# Required for cross-site requests between:
+# Vercel -> Render
+AUTH_COOKIE_SAMESITE = "None"
 
 
 # ============================================================
 # EMAIL - BREVO SMTP
 # ============================================================
 
-EMAIL_BACKEND = (
-    "django.core.mail.backends.smtp.EmailBackend"
-)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = os.getenv(
     "EMAIL_HOST",
@@ -340,10 +287,7 @@ EMAIL_HOST = os.getenv(
 )
 
 EMAIL_PORT = int(
-    os.getenv(
-        "EMAIL_PORT",
-        "587",
-    )
+    os.getenv("EMAIL_PORT", "587")
 )
 
 EMAIL_HOST_USER = os.getenv(
@@ -355,11 +299,7 @@ EMAIL_HOST_PASSWORD = os.getenv(
 )
 
 EMAIL_USE_TLS = (
-    os.getenv(
-        "EMAIL_USE_TLS",
-        "True",
-    ).lower()
-    == "true"
+    os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
 )
 
 DEFAULT_FROM_EMAIL = os.getenv(
@@ -388,16 +328,18 @@ STATIC_URL = "static/"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+
 # ============================================================
-# Media
+# MEDIA FILES
 # ============================================================
+
 MEDIA_URL = "/media/"
+
 MEDIA_ROOT = BASE_DIR / "media"
+
 
 # ============================================================
 # DEFAULT PRIMARY KEY
 # ============================================================
 
-DEFAULT_AUTO_FIELD = (
-    "django.db.models.BigAutoField"
-)
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
