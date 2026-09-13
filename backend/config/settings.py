@@ -342,6 +342,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 # CLOUDINARY (IMAGE STORAGE)
 # ============================================================
 
+# ============================================================
+# CLOUDINARY (IMAGE STORAGE)
+# ============================================================
+
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
     "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
