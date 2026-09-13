@@ -142,17 +142,33 @@ def set_auth_cookies(response, tokens: dict):
     refresh_max_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
 
     cookie_kwargs = dict(
-        httponly=True,
-        secure=not settings.DEBUG,  # must be True in production (HTTPS)
-        samesite="Lax",
+        httponly=settings.AUTH_COOKIE_HTTP_ONLY,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
     )
 
-    response.set_cookie("access_token", tokens["access"], max_age=access_max_age, **cookie_kwargs)
-    response.set_cookie("refresh_token", tokens["refresh"], max_age=refresh_max_age, **cookie_kwargs)
+    response.set_cookie(
+        settings.AUTH_COOKIE_ACCESS,
+        tokens["access"],
+        max_age=access_max_age,
+        **cookie_kwargs,
+    )
+    response.set_cookie(
+        settings.AUTH_COOKIE_REFRESH,
+        tokens["refresh"],
+        max_age=refresh_max_age,
+        **cookie_kwargs,
+    )
     return response
 
 
 def clear_auth_cookies(response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie(
+        settings.AUTH_COOKIE_ACCESS,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+    )
+    response.delete_cookie(
+        settings.AUTH_COOKIE_REFRESH,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+    )
     return response
