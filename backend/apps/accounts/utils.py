@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import secrets
 from datetime import timedelta
 
@@ -8,6 +9,8 @@ from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import EmailVerification, PasswordReset
+
+logger = logging.getLogger(__name__)
 
 OTP_LENGTH = 6
 OTP_TTL_MINUTES = getattr(settings, "OTP_TTL_MINUTES", 10)
@@ -83,9 +86,10 @@ def verify_otp(model, user, raw_code: str) -> bool:
 def send_transactional_email(to_email: str, subject: str, html_content: str) -> None:
     """
     Sends an HTML email via Django's configured EMAIL_BACKEND (SMTP, routed
-    through Brevo's relay). Raises on failure — callers can decide whether
-    a failed send should block the request (e.g. don't fail signup just
-    because the verification email didn't go out; log it instead).
+    through Brevo's relay). Failures are logged, not raised — a flaky SMTP
+    connection should never take down signup/login/password-reset. Callers
+    (signup, verification resend, password reset) all treat email as
+    best-effort.
     """
     message = EmailMultiAlternatives(
         subject=subject,
@@ -94,7 +98,10 @@ def send_transactional_email(to_email: str, subject: str, html_content: str) -> 
         to=[to_email],
     )
     message.attach_alternative(html_content, "text/html")
-    message.send(fail_silently=False)
+    try:
+        message.send(fail_silently=False)
+    except Exception:
+        logger.exception("Failed to send email to %s", to_email)
 
 
 def send_verification_email(user, code: str) -> None:
