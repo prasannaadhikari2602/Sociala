@@ -5,7 +5,7 @@ const getApiBaseUrl = () => {
   const { hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return import.meta.env.VITE_API_URL || "http://localhost:8000";
+    return import.meta.env.VITE_API_URL || "https://sociala-backend.onrender.com";
   }
 
   return import.meta.env.VITE_API_LAN_URL || "http://192.168.18.9:8000";
