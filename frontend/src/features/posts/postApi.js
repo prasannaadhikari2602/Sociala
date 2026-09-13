@@ -92,6 +92,36 @@ export const postApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `api/posts/posts/${id}/unlike/`, method: "POST" }),
       invalidatesTags: (result, err, id) => [{ type: "Post", id }],
     }),
+
+    // --------------------------------
+    // ADMIN: LIST ALL POSTS
+    // --------------------------------
+    getAdminPosts: builder.query({
+      query: ({ search = "" } = {}) =>
+        `api/posts/admin/posts/?search=${encodeURIComponent(search)}`,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((p) => ({ type: "Post", id: p.id })),
+              { type: "Post", id: "ADMIN_LIST" },
+            ]
+          : [{ type: "Post", id: "ADMIN_LIST" }],
+    }),
+
+    // --------------------------------
+    // ADMIN: DELETE ANY POST
+    // --------------------------------
+    adminDeletePost: builder.mutation({
+      query: (id) => ({
+        url: `api/posts/admin/posts/${id}/delete/`,
+        method: "POST",
+      }),
+      invalidatesTags: [
+        { type: "Post", id: "ADMIN_LIST" },
+        { type: "Post", id: "FEED" },
+        { type: "Post", id: "EXPLORE" },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -107,4 +137,6 @@ export const {
   useDeletePostMutation,
   useLikePostMutation,
   useUnlikePostMutation,
+  useGetAdminPostsQuery,
+  useAdminDeletePostMutation,
 } = postApi;

@@ -3,8 +3,22 @@ import { useGetAdminReportsQuery, useResolveReportMutation } from "../../feature
 
 const Reports = () => {
   const [statusFilter, setStatusFilter] = useState("pending");
+  const [busyId, setBusyId] = useState(null);
   const { data: reports, isLoading } = useGetAdminReportsQuery(statusFilter);
   const [resolveReport] = useResolveReportMutation();
+
+  const handleResolve = async (id, action, confirmText) => {
+    if (confirmText && !window.confirm(confirmText)) return;
+
+    setBusyId(id);
+    try {
+      await resolveReport({ id, action }).unwrap();
+    } catch (err) {
+      alert(err?.data?.detail || "Something went wrong.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -45,16 +59,50 @@ const Reports = () => {
             </div>
 
             {r.status === "pending" && (
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
-                  onClick={() => resolveReport({ id: r.id, action: "delete_post" })}
-                  className="rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white"
+                  disabled={busyId === r.id}
+                  onClick={() =>
+                    handleResolve(
+                      r.id,
+                      "delete_post",
+                      "Remove this post? The author will keep their account."
+                    )
+                  }
+                  className="rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
                 >
-                  Remove post & warn user
+                  Remove post
                 </button>
                 <button
-                  onClick={() => resolveReport({ id: r.id, action: "dismiss" })}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+                  disabled={busyId === r.id}
+                  onClick={() =>
+                    handleResolve(
+                      r.id,
+                      "suspend_user",
+                      `Suspend @${r.post.user.username}? The post will stay up.`
+                    )
+                  }
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                >
+                  Suspend user
+                </button>
+                <button
+                  disabled={busyId === r.id}
+                  onClick={() =>
+                    handleResolve(
+                      r.id,
+                      "delete_and_suspend",
+                      `Remove this post AND suspend @${r.post.user.username}?`
+                    )
+                  }
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                >
+                  Remove & suspend
+                </button>
+                <button
+                  disabled={busyId === r.id}
+                  onClick={() => handleResolve(r.id, "dismiss")}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 disabled:opacity-40"
                 >
                   Dismiss report
                 </button>

@@ -31,6 +31,8 @@ import UserExplore from "../pages/user/UserExplore";
 import ViewUserProfile from "../pages/user/ViewUserProfile";
 import FollowListPage from "../pages/user/FollowListPage";
 import Reports from "../pages/admin/Reports";
+import ManageUser from "../pages/admin/ManageUser";
+import ManagePost from "../pages/admin/ManagePost";
 
 const AppRoutes = createBrowserRouter([
   // PUBLIC
@@ -87,6 +89,8 @@ const AppRoutes = createBrowserRouter([
         element: <AdminLayout />,
         children: [
           { path: "/admin/dashboard", element: <AdminDashboard /> },
+          { path: "/admin/users", element: <ManageUser /> },
+          { path: "/admin/posts", element: <ManagePost /> },
           { path: "/admin/reports", element: <Reports /> },
         ],
       },

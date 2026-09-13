@@ -1,9 +1,11 @@
 from django.db.models import Q
-from rest_framework import viewsets, status, permissions, filters
+from rest_framework import viewsets, status, permissions, filters, generics
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from apps.accounts.permissions import IsAdminRole
 from apps.follows.models import Follow
 from apps.notifications.services import notify
 from apps.shares.models import Share
@@ -228,3 +230,56 @@ class CommentViewSet(viewsets.ModelViewSet):
         elif post.user_id != self.request.user.id:
             notify(recipient=post.user, actor=self.request.user,
                    verb="comment", target_post=post, comment=comment)
+
+
+# --------------------------------------------------------------------------
+# ADMIN: post management
+# --------------------------------------------------------------------------
+
+class AdminPostListView(generics.ListAPIView):
+    """
+    GET /api/posts/admin/posts/?search=&user=
+    Lists every non-removed post regardless of visibility/ownership, for
+    moderation purposes.
+    """
+
+    serializer_class = PostSerializer
+    permission_classes = [IsAdminRole]
+
+    def get_queryset(self):
+        qs = (
+            Post.objects.filter(is_removed=False)
+            .select_related("user")
+            .prefetch_related("images", "likes", "comments", "shares")
+            .order_by("-created_at")
+        )
+
+        search = self.request.query_params.get("search")
+        user_id = self.request.query_params.get("user")
+
+        if search:
+            qs = qs.filter(Q(content__icontains=search) | Q(user__username__icontains=search))
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+
+        return qs
+
+    def get_serializer_context(self):
+        return {"request": self.request}
+
+
+class AdminDeletePostView(APIView):
+    """POST /api/posts/admin/posts/<id>/delete/ — soft-removes any post."""
+
+    permission_classes = [IsAdminRole]
+
+    def post(self, request, pk):
+        try:
+            post = Post.objects.get(id=pk)
+        except Post.DoesNotExist:
+            return Response({"detail": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        post.is_removed = True
+        post.save(update_fields=["is_removed"])
+
+        return Response({"detail": "Post removed."}, status=status.HTTP_200_OK)

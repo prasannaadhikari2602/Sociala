@@ -1,11 +1,14 @@
 from django.contrib.auth import authenticate as django_authenticate
-from rest_framework import status
+from django.db.models import Q
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import EmailVerification, PasswordReset, User
+from .permissions import IsAdminRole
 from .serializers import (
+    AdminUserListSerializer,
     EmailVerifySerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
@@ -213,8 +216,8 @@ class PasswordResetConfirmView(APIView):
         user.save(update_fields=["password", "updated_at"])
 
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
-    
-    
+
+
 
 class DeleteAccountView(APIView):
     """
@@ -320,4 +323,168 @@ class ChangePasswordView(APIView):
         return Response(
             {"detail": "Password changed successfully."},
             status=status.HTTP_200_OK,
+        )
+
+
+# --------------------------------------------------------------------------
+# ADMIN: user management
+# --------------------------------------------------------------------------
+
+class AdminUserListView(generics.ListAPIView):
+    """
+    GET /api/accounts/admin/users?search=&role=&status=
+    status is one of: active | suspended (omit for all)
+    """
+
+    serializer_class = AdminUserListSerializer
+    permission_classes = [IsAdminRole]
+
+    def get_queryset(self):
+        qs = User.objects.all().order_by("-created_at")
+
+        search = self.request.query_params.get("search")
+        role = self.request.query_params.get("role")
+        status_param = self.request.query_params.get("status")
+
+        if search:
+            qs = qs.filter(Q(email__icontains=search) | Q(username__icontains=search))
+        if role:
+            qs = qs.filter(role=role)
+        if status_param == "active":
+            qs = qs.filter(is_active=True)
+        elif status_param == "suspended":
+            qs = qs.filter(is_active=False)
+
+        return qs
+
+
+def _is_protected_admin_target(user):
+    """Admins can't suspend/delete other admins (or, via the self-check, themselves)."""
+    return getattr(user, "role", None) == "admin" or user.is_staff or user.is_superuser
+
+
+class AdminSuspendUserView(APIView):
+    """POST /api/accounts/admin/users/<id>/suspend — deactivates a user (login blocked)."""
+
+    permission_classes = [IsAdminRole]
+
+    def post(self, request, pk):
+        try:
+            target = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if target.id == request.user.id:
+            return Response(
+                {"detail": "You cannot suspend your own account."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if _is_protected_admin_target(target):
+            return Response(
+                {"detail": "Admins cannot suspend other admins."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        target.is_active = False
+        target.save(update_fields=["is_active"])
+
+        return Response({"detail": "User suspended.", "id": target.id, "is_active": target.is_active})
+
+
+class AdminUnsuspendUserView(APIView):
+    """POST /api/accounts/admin/users/<id>/unsuspend — reactivates a user."""
+
+    permission_classes = [IsAdminRole]
+
+    def post(self, request, pk):
+        try:
+            target = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        target.is_active = True
+        target.save(update_fields=["is_active"])
+
+        return Response({"detail": "User unsuspended.", "id": target.id, "is_active": target.is_active})
+
+
+class AdminDeleteUserView(APIView):
+    """POST /api/accounts/admin/users/<id>/delete — permanently deletes a user account."""
+
+    permission_classes = [IsAdminRole]
+
+    def post(self, request, pk):
+        try:
+            target = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if target.id == request.user.id:
+            return Response(
+                {"detail": "You cannot delete your own account from here."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if _is_protected_admin_target(target):
+            return Response(
+                {"detail": "Admins cannot delete other admins."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        target.delete()
+
+        return Response({"detail": "User deleted."}, status=status.HTTP_200_OK)
+
+
+class AdminDashboardStatsView(APIView):
+    """
+    GET /api/accounts/admin/dashboard-stats
+    Returns the counters + recent-activity lists shown on the admin dashboard.
+    Imports Post/Report locally to avoid a hard cross-app import at module load.
+    """
+
+    permission_classes = [IsAdminRole]
+
+    def get(self, request):
+        from apps.posts.models import Post
+        from apps.reports.models import Report
+
+        total_users = User.objects.count()
+        total_posts = Post.objects.filter(is_removed=False).count()
+        reported_posts = Report.objects.filter(status="pending").count()
+        banned_users = User.objects.filter(is_active=False).count()
+
+        recent_users = User.objects.order_by("-created_at")[:5]
+        recent_users_data = [
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "role": u.role,
+                "is_verified": u.is_verified,
+                "is_active": u.is_active,
+            }
+            for u in recent_users
+        ]
+
+        pending_reports = (
+            Report.objects.filter(status="pending")
+            .select_related("reporter", "post")
+            .order_by("-created_at")[:5]
+        )
+        pending_reports_data = [
+            {
+                "id": r.id,
+                "reason": r.reason,
+                "reporter_username": r.reporter.username,
+                "post_id": r.post_id,
+            }
+            for r in pending_reports
+        ]
+
+        return Response(
+            {
+                "total_users": total_users,
+                "total_posts": total_posts,
+                "reported_posts": reported_posts,
+                "banned_users": banned_users,
+                "recent_users": recent_users_data,
+                "pending_reports": pending_reports_data,
+            }
         )

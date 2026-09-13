@@ -68,7 +68,13 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate_new_password(self, value):
         validate_password(value)
         return value
-    
-    
+
+
 class ResendEmailVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class AdminUserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "email", "username", "role", "is_active", "is_verified", "created_at"]

@@ -33,10 +33,35 @@ urlpatterns = [
     ),
 
     path("me", views.MeView.as_view(), name="me"),
-    
+
     path(
     "change-password",
     views.ChangePasswordView.as_view(),
     name="change-password",
 ),
+
+    # ---------------------------------------------------------------
+    # ADMIN: user management + dashboard
+    # ---------------------------------------------------------------
+    path("admin/users", views.AdminUserListView.as_view(), name="admin-user-list"),
+    path(
+        "admin/users/<uuid:pk>/suspend",
+        views.AdminSuspendUserView.as_view(),
+        name="admin-user-suspend",
+    ),
+    path(
+        "admin/users/<uuid:pk>/unsuspend",
+        views.AdminUnsuspendUserView.as_view(),
+        name="admin-user-unsuspend",
+    ),
+    path(
+        "admin/users/<uuid:pk>/delete",
+        views.AdminDeleteUserView.as_view(),
+        name="admin-user-delete",
+    ),
+    path(
+        "admin/dashboard-stats",
+        views.AdminDashboardStatsView.as_view(),
+        name="admin-dashboard-stats",
+    ),
 ]
