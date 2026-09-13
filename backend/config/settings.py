@@ -29,6 +29,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "https://sociala-frontend.vercel.app/",
     os.getenv("LAN_IP", "192.168.18.9"),
     "sociala-backend.onrender.com"
 ]
@@ -40,7 +41,7 @@ ALLOWED_HOSTS = [
 
 FRONTEND_URL = os.getenv(
     "FRONTEND_URL",
-    "http://localhost:5173",
+    "https://sociala-frontend.vercel.app/",
 )
 
 FRONTEND_LAN_URL = os.getenv(
