@@ -30,6 +30,7 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     os.getenv("LAN_IP", "192.168.18.9"),
+    "sociala-backend.onrender.com"
 ]
 
 
@@ -183,6 +184,8 @@ CSRF_TRUSTED_ORIGINS = [
 
     # React on phone through LAN
     FRONTEND_LAN_URL,
+    
+     "https://sociala-backend.onrender.com",
 ]
 
 
