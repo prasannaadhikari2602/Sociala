@@ -58,7 +58,7 @@ const Feed = () => {
 
       <div className="relative mx-auto w-full min-w-0 max-w-full sm:max-w-xl md:max-w-2xl lg:max-w-2xl xl:max-w-3xl px-3 sm:px-6 py-4 sm:py-8">
         {/* Composer */}
-        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-sm w-full min-w-0 overflow-hidden wrap-break-words wrap-anywhere">
           <PostComposer />
         </div>
 
@@ -70,7 +70,7 @@ const Feed = () => {
                 // A share and its original post can share the same post id,
                 // so key on the share id when present to avoid collisions.
                 key={item.share_id ? `share-${item.share_id}` : `post-${item.id}`}
-                className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md transition min-w-0"
+                className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md transition min-w-0 w-full overflow-hidden wrap-break-words wrap-anywhere"
               >
                 <PostCard post={item} />
               </div>
