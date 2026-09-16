@@ -31,33 +31,38 @@ const AdminLayout = () => {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-slate-900">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <NavLink to="/admin/dashboard" className="text-lg font-semibold text-white">
-            Sociala Admin
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+          <NavLink
+            to="/admin/dashboard"
+            className="text-base font-semibold text-white sm:text-lg"
+          >
+            Sociala <span className="text-blue-400">Admin</span>
           </NavLink>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-300">
+
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden text-sm text-slate-300 sm:inline">
               {user?.first_name || user?.email}
             </span>
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-md px-2.5 py-1.5 sm:px-3 text-xs sm:text-sm text-slate-200 transition hover:bg-slate-800"
             >
-              <FiLogOut /> Log out
+              <FiLogOut size={15} />
+              <span className="hidden sm:inline">Log out</span>
             </button>
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-6xl gap-1 px-6">
+        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 sm:px-6 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {NAV_ITEMS.map(({ to, label, icon: Icon, showCount }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
+                `flex shrink-0 items-center gap-1.5 sm:gap-2 border-b-2 px-2.5 sm:px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? "border-indigo-400 text-white"
+                    ? "border-blue-400 text-white"
                     : "border-transparent text-slate-400 hover:text-slate-200"
                 }`
               }
@@ -65,7 +70,7 @@ const AdminLayout = () => {
               <Icon size={16} />
               {label}
               {showCount && pendingCount > 0 && (
-                <span className="rounded-full bg-indigo-500 px-1.5 py-0.5 text-xs font-semibold text-white">
+                <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-xs font-semibold text-white">
                   {pendingCount}
                 </span>
               )}
