@@ -40,11 +40,6 @@ const PostComposer = () => {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="flex gap-3">
-        <img
-          src={currentUser?.profile_image || "/default-avatar.png"}
-          className="h-10 w-10 rounded-full object-cover"
-          alt=""
-        />
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -74,7 +69,7 @@ const PostComposer = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#A855F7]"
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600"
           >
             <FiImage size={18} />
             Photos
@@ -95,7 +90,7 @@ const PostComposer = () => {
         <button
           onClick={submit}
           disabled={isLoading}
-          className="rounded-xl bg-[#A855F7] px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:opacity-60"
         >
           {isLoading ? "Posting..." : "Post"}
         </button>
