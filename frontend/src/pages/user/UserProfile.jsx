@@ -379,24 +379,6 @@ const UserProfile = () => {
                   You haven't shared anything yet. Start your first post
                   and let your friends know what's happening.
                 </p>
-
-                <button
-                  className="
-                    mt-5
-                    rounded-xl
-                    bg-[#A855F7]
-                    px-5 py-2.5
-                    text-sm font-semibold
-                    text-white
-                    shadow-sm
-                    shadow-purple-200
-                    transition
-                    hover:bg-[#9333EA]
-                    hover:shadow-md
-                  "
-                >
-                  Create Your First Post
-                </button>
               </div>
             </div>
           )}
