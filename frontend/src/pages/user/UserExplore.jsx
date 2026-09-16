@@ -75,181 +75,197 @@ const UserExplore = () => {
   const postsPreview = activeTab === "all" ? postsList.slice(0, 5) : postsList;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-
-      {/* Search */}
-      <div className="relative">
-        <FiSearch
-          size={16}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-        />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search people or posts..."
-          className="
-            w-full rounded-xl border border-slate-200
-            py-3 pl-10 pr-4
-            text-sm
-            outline-none
-            focus:border-[#A855F7] focus:ring-2 focus:ring-purple-100
-          "
-        />
+    <div className="relative w-full min-w-0 bg-white overflow-x-hidden">
+      {/* Subtle background glow, matches site theme */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/3 w-72 h-72 bg-blue-500/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* Tabs */}
-      <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F6F7FB] p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`
-              flex-1 rounded-lg px-3 py-2
-              text-xs font-semibold
+      <div className="relative mx-auto w-full min-w-0 max-w-full sm:max-w-xl md:max-w-2xl lg:max-w-2xl xl:max-w-3xl px-3 sm:px-6 py-4 sm:py-8">
+
+        {/* Search */}
+        <div className="relative">
+          <FiSearch
+            size={16}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search people or posts..."
+            className="
+              w-full rounded-xl sm:rounded-2xl border border-slate-200
+              py-3 sm:py-3.5 pl-10 pr-4
+              text-sm
+              outline-none
               transition
-              ${
-                activeTab === tab.key
-                  ? "bg-white text-[#A855F7] shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }
-            `}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+              focus:border-blue-400 focus:ring-2 focus:ring-blue-100
+            "
+          />
+        </div>
 
-      {/* PEOPLE SECTION */}
-      {showPeople && (
-        <div className="mt-6">
-          {activeTab === "all" && (
-            <div className="mb-2 flex items-center gap-2">
-              <FiUsers size={14} className="text-[#A855F7]" />
-              <h2 className="text-sm font-bold text-[#12111A]">People</h2>
-            </div>
-          )}
+        {/* Tabs */}
+        <div className="mt-4 flex items-center gap-2 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 p-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`
+                flex-1 rounded-lg sm:rounded-xl px-3 py-2
+                text-xs sm:text-sm font-semibold
+                transition
+                ${
+                  activeTab === tab.key
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {peopleLoading && (
-            <p className="py-6 text-center text-sm text-slate-400">Searching people...</p>
-          )}
+        {/* PEOPLE SECTION */}
+        {showPeople && (
+          <div className="mt-6 sm:mt-8">
+            {activeTab === "all" && (
+              <div className="mb-2 flex items-center gap-2">
+                <FiUsers size={14} className="text-blue-600" />
+                <h2 className="text-sm font-bold text-slate-900">People</h2>
+              </div>
+            )}
 
-          {!peopleLoading && peoplePreview.length === 0 && (
-            <p className="py-4 text-center text-xs text-slate-400">
-              {debouncedSearch ? "No people found." : "No suggestions right now."}
-            </p>
-          )}
+            {peopleLoading && (
+              <p className="py-6 text-center text-sm text-slate-400">Searching people...</p>
+            )}
 
-          {!peopleLoading && peoplePreview.length > 0 && (
-            <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
-              {peoplePreview.map((u) => (
-                <div key={u.id} className="flex items-center justify-between px-4 py-4">
-                  <Link to={`/profile/${u.id}`} className="flex min-w-0 items-center gap-3">
-                    <img
-                      src={u.profile_image || "/default-avatar.png"}
-                      className="h-11 w-11 shrink-0 rounded-full object-cover"
-                      alt=""
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#12111A]">
-                        {u.full_name}
-                      </p>
-                      <p className="truncate text-xs text-slate-500">@{u.username}</p>
-                    </div>
-                  </Link>
+            {!peopleLoading && peoplePreview.length === 0 && (
+              <p className="py-4 text-center text-xs text-slate-400">
+                {debouncedSearch ? "No people found." : "No suggestions right now."}
+              </p>
+            )}
 
-                  <button
-                    type="button"
-                    onClick={() => (u.is_following ? unfollow(u.id) : follow(u.id))}
-                    className={`
-                      shrink-0 rounded-lg px-4 py-2
-                      text-xs font-semibold
-                      transition
-                      ${
-                        u.is_following
-                          ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                          : "bg-[#A855F7] text-white hover:bg-[#9333EA]"
-                      }
-                    `}
+            {!peopleLoading && peoplePreview.length > 0 && (
+              <div className="divide-y divide-slate-100 rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                {peoplePreview.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 hover:bg-slate-50 transition"
                   >
-                    {u.is_following ? "Following" : "Follow"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                    <Link to={`/profile/${u.id}`} className="flex min-w-0 items-center gap-3">
+                      <img
+                        src={u.profile_image || "/default-avatar.png"}
+                        className="h-11 w-11 shrink-0 rounded-full object-cover border border-slate-100"
+                        alt=""
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {u.full_name}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">@{u.username}</p>
+                      </div>
+                    </Link>
 
-          {activeTab === "people" && (
-            <Pagination
-              page={peoplePage}
-              hasNext={peopleHasNext}
-              hasPrevious={peopleHasPrevious}
-              totalCount={peopleCount}
-              onPageChange={setPeoplePage}
-            />
-          )}
+                    <button
+                      type="button"
+                      onClick={() => (u.is_following ? unfollow(u.id) : follow(u.id))}
+                      className={`
+                        shrink-0 rounded-lg px-4 py-2
+                        text-xs font-semibold
+                        transition
+                        ${
+                          u.is_following
+                            ? "border border-slate-200 text-slate-600 hover:bg-slate-100"
+                            : "bg-slate-900 text-white hover:bg-slate-700"
+                        }
+                      `}
+                    >
+                      {u.is_following ? "Following" : "Follow"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {activeTab === "all" && peopleList.length > 5 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("people")}
-              className="mt-2 w-full rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              See all people
-            </button>
-          )}
-        </div>
-      )}
+            {activeTab === "people" && (
+              <Pagination
+                page={peoplePage}
+                hasNext={peopleHasNext}
+                hasPrevious={peopleHasPrevious}
+                totalCount={peopleCount}
+                onPageChange={setPeoplePage}
+              />
+            )}
 
-      {/* POSTS SECTION */}
-      {showPosts && (
-        <div className="mt-8">
-          {activeTab === "all" && (
-            <div className="mb-2 flex items-center gap-2">
-              <FiGrid size={14} className="text-[#A855F7]" />
-              <h2 className="text-sm font-bold text-[#12111A]">Posts</h2>
-            </div>
-          )}
+            {activeTab === "all" && peopleList.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("people")}
+                className="mt-3 w-full rounded-xl sm:rounded-2xl border border-slate-200 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:border-blue-300"
+              >
+                See all people
+              </button>
+            )}
+          </div>
+        )}
 
-          {postsLoading && (
-            <p className="py-6 text-center text-sm text-slate-400">Searching posts...</p>
-          )}
+        {/* POSTS SECTION */}
+        {showPosts && (
+          <div className="mt-8 sm:mt-10">
+            {activeTab === "all" && (
+              <div className="mb-2 flex items-center gap-2">
+                <FiGrid size={14} className="text-blue-600" />
+                <h2 className="text-sm font-bold text-slate-900">Posts</h2>
+              </div>
+            )}
 
-          {!postsLoading && postsPreview.length === 0 && (
-            <p className="py-4 text-center text-xs text-slate-400">
-              {debouncedSearch ? "No posts found." : "No public posts yet."}
-            </p>
-          )}
+            {postsLoading && (
+              <p className="py-6 text-center text-sm text-slate-400">Searching posts...</p>
+            )}
 
-          {!postsLoading && postsPreview.length > 0 && (
-            <div className="flex flex-col gap-4">
-              {postsPreview.map((post) => (
-                <ExplorePostCard key={post.id} post={post} />
-              ))}
-            </div>
-          )}
+            {!postsLoading && postsPreview.length === 0 && (
+              <p className="py-4 text-center text-xs text-slate-400">
+                {debouncedSearch ? "No posts found." : "No public posts yet."}
+              </p>
+            )}
 
-          {activeTab === "posts" && (
-            <Pagination
-              page={postsPage}
-              hasNext={postsHasNext}
-              hasPrevious={postsHasPrevious}
-              totalCount={postsCount}
-              onPageChange={setPostsPage}
-            />
-          )}
+            {!postsLoading && postsPreview.length > 0 && (
+              <div className="flex flex-col gap-4 sm:gap-5">
+                {postsPreview.map((post) => (
+                  <div
+                    key={post.id}
+                    className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md transition min-w-0"
+                  >
+                    <ExplorePostCard post={post} />
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {activeTab === "all" && postsList.length > 5 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("posts")}
-              className="mt-2 w-full rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              See all posts
-            </button>
-          )}
-        </div>
-      )}
+            {activeTab === "posts" && (
+              <Pagination
+                page={postsPage}
+                hasNext={postsHasNext}
+                hasPrevious={postsHasPrevious}
+                totalCount={postsCount}
+                onPageChange={setPostsPage}
+              />
+            )}
+
+            {activeTab === "all" && postsList.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("posts")}
+                className="mt-3 w-full rounded-xl sm:rounded-2xl border border-slate-200 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:border-blue-300"
+              >
+                See all posts
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
