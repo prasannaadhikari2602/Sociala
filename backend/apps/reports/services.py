@@ -1,18 +1,37 @@
 from django.utils import timezone
+
 from apps.notifications.services import notify
 
 
-def resolve_report_action(report, admin_user, delete_post=False):
-    report.status = "actioned" if delete_post else "reviewed"
+# Resolve a report after an admin reviews it.
+def resolve_report_action(
+    report,
+    admin_user,
+    delete_post=False
+):
+    # Update the report's review information.
+    report.status = (
+        "actioned"
+        if delete_post
+        else "reviewed"
+    )
+
     report.reviewed_by = admin_user
     report.reviewed_at = timezone.now()
+
     report.save()
 
+    # Remove the reported post when the admin takes action.
     if delete_post:
         post = report.post
         owner = post.user
+
         post.is_removed = True
-        post.save(update_fields=["is_removed"])
+        post.save(
+            update_fields=["is_removed"]
+        )
+
+        # Notify the post owner about the removal.
         notify(
             recipient=owner,
             actor=None,
@@ -23,7 +42,12 @@ def resolve_report_action(report, admin_user, delete_post=False):
                 "to account restrictions."
             ),
         )
-        # mark any other pending reports on the same post as actioned too
-        post.reports.filter(status="pending").update(
-            status="actioned", reviewed_by=admin_user, reviewed_at=timezone.now()
+
+        # Resolve other pending reports for the same post.
+        post.reports.filter(
+            status="pending"
+        ).update(
+            status="actioned",
+            reviewed_by=admin_user,
+            reviewed_at=timezone.now()
         )
