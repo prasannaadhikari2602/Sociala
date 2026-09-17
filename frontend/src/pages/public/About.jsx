@@ -8,7 +8,6 @@ import {
   FiMessageCircle,
   FiHeart,
   FiShare2,
-  FiCompass,
   FiEdit3,
   FiGlobe,
   FiCheck,
@@ -72,14 +71,6 @@ const About = () => {
                     size={17}
                     className="transition-transform group-hover:translate-x-1"
                   />
-                </Link>
-
-                <Link
-                  to="/explore"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <FiCompass size={18} />
-                  Explore
                 </Link>
 
               </div>
@@ -627,14 +618,6 @@ const About = () => {
                 size={18}
                 className="transition-transform group-hover:translate-x-1"
               />
-            </Link>
-
-            <Link
-              to="/explore"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-7 py-3.5 font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
-            >
-              <FiCompass size={18} />
-              Explore Sociala
             </Link>
 
           </div>

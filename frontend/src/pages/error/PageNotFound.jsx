@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 import {
   FiArrowLeft,
-  FiCompass,
   FiHome,
   FiSearch,
 } from "react-icons/fi";
@@ -141,37 +140,6 @@ const NotFound = () => {
                     group-hover:-translate-x-1
                   "
                 />
-
-              </Link>
-
-
-              {/* Explore */}
-              <Link
-                to="/explore"
-                className="
-                  inline-flex
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-slate-200
-                  bg-white
-                  px-6
-                  py-3.5
-                  font-medium
-                  text-slate-700
-                  transition-colors
-                  hover:bg-slate-50
-                  hover:text-slate-900
-                  sm:w-auto
-                "
-              >
-
-                <FiCompass size={18} />
-
-                Explore Sociala
 
               </Link>
 

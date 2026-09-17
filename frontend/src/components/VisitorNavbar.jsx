@@ -3,7 +3,6 @@ import { NavLink, Link } from "react-router-dom";
 
 import {
   FiHome,
-  FiCompass,
   FiInfo,
   FiMail,
   FiLogIn,
@@ -19,7 +18,6 @@ const VisitorNavbar = () => {
 
   const navLinks = [
     { name: "Home", path: "/", icon: <FiHome /> },
-    { name: "Explore", path: "/explore", icon: <FiCompass /> },
     { name: "About", path: "/about", icon: <FiInfo /> },
     { name: "Contact", path: "/contact", icon: <FiMail /> },
   ];

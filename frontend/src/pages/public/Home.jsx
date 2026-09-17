@@ -69,14 +69,6 @@ const Home = () => {
                   <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </NavLink>
 
-                <NavLink
-                  to="/explore"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-md border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 transition"
-                >
-                  Explore
-                  <FiCompass />
-                </NavLink>
-
               </div>
 
               {/* Features */}
@@ -652,14 +644,6 @@ const Home = () => {
                 <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
               </NavLink>
 
-              <NavLink
-                to="/explore"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-md border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 transition"
-              >
-                Start Exploring
-                <FiCompass />
-              </NavLink>
-
             </div>
 
             {/* Small Text */}
@@ -676,4 +660,3 @@ const Home = () => {
 };
 
 export default Home;
-

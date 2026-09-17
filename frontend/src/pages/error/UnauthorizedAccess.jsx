@@ -3,12 +3,9 @@ import { NavLink } from "react-router-dom";
 
 import {
   FiArrowLeft,
-  FiCompass,
   FiHome,
   FiLock,
 } from "react-icons/fi";
-
-import { TbSocial } from "react-icons/tb";
 
 const UnauthorizedAccess = () => {
   return (
@@ -98,8 +95,7 @@ const UnauthorizedAccess = () => {
 
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-500 sm:text-lg">
               You don't have permission to access this page.
-              Please return to a page available to your account
-              or explore something else on Sociala.
+              Please return to a page available to your account.
             </p>
 
 
@@ -142,37 +138,6 @@ const UnauthorizedAccess = () => {
                     group-hover:-translate-x-1
                   "
                 />
-
-              </NavLink>
-
-
-              {/* Explore */}
-              <NavLink
-                to="/explore"
-                className="
-                  inline-flex
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-slate-200
-                  bg-white
-                  px-6
-                  py-3.5
-                  font-medium
-                  text-slate-700
-                  transition-colors
-                  hover:bg-slate-50
-                  hover:text-slate-900
-                  sm:w-auto
-                "
-              >
-
-                <FiCompass size={18} />
-
-                Explore Sociala
 
               </NavLink>
 

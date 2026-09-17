@@ -72,15 +72,6 @@ const Footer = () => {
 
               <li>
                 <Link
-                  to="/explore"
-                  className="text-sm text-slate-500 transition-colors hover:text-slate-900"
-                >
-                  Explore
-                </Link>
-              </li>
-
-              <li>
-                <Link
                   to="/signup"
                   className="text-sm text-slate-500 transition-colors hover:text-slate-900"
                 >
@@ -121,24 +112,6 @@ const Footer = () => {
                   className="text-sm text-slate-500 transition-colors hover:text-slate-900"
                 >
                   Contact
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  to="/privacy"
-                  className="text-sm text-slate-500 transition-colors hover:text-slate-900"
-                >
-                  Privacy Policy
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  to="/terms"
-                  className="text-sm text-slate-500 transition-colors hover:text-slate-900"
-                >
-                  Terms of Service
                 </Link>
               </li>
             </ul>
