@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { FiMapPin, FiCalendar } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
 
@@ -105,19 +105,22 @@ const ViewUserProfile = () => {
                 </div>
               </div>
 
+              {/* Stats: display-only — followers/following counts are shown,
+                  but this profile's own followers/following lists are not
+                  viewable by other users, so these are plain divs, not links. */}
               <div className="mt-6 grid grid-cols-3 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-[#F8F8FA]">
                 <div className="px-3 py-4 text-center">
                   <p className="text-lg font-bold">{profile.posts_count ?? 0}</p>
                   <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">Posts</p>
                 </div>
-                <Link to={`/profile/${userId}/followers`} className="px-3 py-4 text-center hover:bg-white">
+                <div className="px-3 py-4 text-center">
                   <p className="text-lg font-bold">{profile.followers_count ?? 0}</p>
                   <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">Followers</p>
-                </Link>
-                <Link to={`/profile/${userId}/following`} className="px-3 py-4 text-center hover:bg-white">
+                </div>
+                <div className="px-3 py-4 text-center">
                   <p className="text-lg font-bold">{profile.following_count ?? 0}</p>
                   <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">Following</p>
-                </Link>
+                </div>
               </div>
             </div>
           </div>
