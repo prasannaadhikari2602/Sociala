@@ -1,3 +1,4 @@
+import { useSelector } from "react-redux";
 import { useGetFeedQuery } from "../../features/posts/postApi";
 import PostCard from "./PostCard";
 import PostComposer from "./PostComposer";
@@ -6,6 +7,18 @@ import { HiOutlineSparkles } from "react-icons/hi2";
 
 const Feed = () => {
   const { data: posts, isLoading, isError } = useGetFeedQuery();
+  const currentUser = useSelector((s) => s.auth.user);
+
+  // Only show a feed item if the underlying post is public, or if it
+  // belongs to the current user (so your own private/friends-only posts
+  // still show up in your own feed). Handles both a flat shape
+  // ({ visibility, user }) and a share wrapping the original post
+  // ({ post: { visibility, user } }).
+  const visiblePosts = posts?.filter((item) => {
+    const visibility = item.visibility ?? item.post?.visibility;
+    const ownerId = item.user?.id ?? item.post?.user?.id;
+    return visibility === "public" || (currentUser && ownerId === currentUser.id);
+  });
 
   if (isLoading) {
     return (
@@ -52,7 +65,7 @@ const Feed = () => {
   return (
     <div className="relative w-full min-w-0 bg-white overflow-x-hidden">
       {/* Subtle background glow, matches site theme */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 pointer-none overflow-hidden">
         <div className="absolute top-0 left-1/3 w-72 h-72 bg-blue-500/5 rounded-full blur-[120px]" />
       </div>
 
@@ -64,8 +77,8 @@ const Feed = () => {
 
         {/* Posts */}
         <div className="mt-4 sm:mt-6 flex flex-col gap-4 sm:gap-5 min-w-0">
-          {posts?.length ? (
-            posts.map((item) => (
+          {visiblePosts?.length ? (
+            visiblePosts.map((item) => (
               <div
                 // A share and its original post can share the same post id,
                 // so key on the share id when present to avoid collisions.

@@ -1,12 +1,46 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { useGetCommentsQuery, useCreateCommentMutation } from "../../features/comments/commentApi";
+import {
+  useGetCommentsQuery,
+  useGetRepliesQuery,
+  useCreateCommentMutation,
+} from "../../features/comments/commentApi";
+
+const ReplyItem = ({ reply }) => (
+  <div className="flex gap-3 py-2">
+    <img
+      src={reply.user.profile_image || "/default-avatar.png"}
+      className="h-6 w-6 rounded-full object-cover"
+      alt=""
+    />
+    <p className="text-sm">
+      <span className="font-semibold">{reply.user.full_name}</span>{" "}
+      <span className="text-slate-600">{reply.content}</span>
+    </p>
+  </div>
+);
 
 const CommentItem = ({ comment, postId }) => {
   const [replying, setReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const [createComment] = useCreateCommentMutation();
+
+  // Only fetch replies once the user actually opens them.
+  const {
+    data: replies,
+    isLoading: repliesLoading,
+  } = useGetRepliesQuery(
+    { postId, parentId: comment.id },
+    { skip: !showReplies }
+  );
+
+  // Prefer a server-provided count if your serializer includes one
+  // (e.g. reply_count / replies_count); otherwise fall back to the
+  // length of whatever we've fetched so far.
+  const replyCount =
+    comment.reply_count ?? comment.replies_count ?? replies?.length ?? 0;
 
   const submitReply = async () => {
     if (!replyText.trim() || isSubmittingReply) return;
@@ -15,6 +49,7 @@ const CommentItem = ({ comment, postId }) => {
       await createComment({ post: postId, content: replyText, parent: comment.id }).unwrap();
       setReplyText("");
       setReplying(false);
+      setShowReplies(true); // reveal the thread so the new reply is visible
     } catch (err) {
       console.error("Reply failed:", err);
     } finally {
@@ -35,12 +70,28 @@ const CommentItem = ({ comment, postId }) => {
             <span className="font-semibold">{comment.user.full_name}</span>{" "}
             <span className="text-slate-600">{comment.content}</span>
           </p>
-          <button
-            onClick={() => setReplying((v) => !v)}
-            className="mt-1 text-xs font-medium text-slate-400 hover:text-[#A855F7]"
-          >
-            Reply
-          </button>
+
+          <div className="mt-1 flex items-center gap-3">
+            <button
+              onClick={() => setReplying((v) => !v)}
+              className="text-xs font-medium text-slate-400 hover:text-[#A855F7]"
+            >
+              Reply
+            </button>
+
+            {(replyCount > 0 || showReplies) && (
+              <button
+                onClick={() => setShowReplies((v) => !v)}
+                className="text-xs font-medium text-slate-400 hover:text-[#A855F7]"
+              >
+                {showReplies
+                  ? "Hide replies"
+                  : `View ${replyCount > 0 ? replyCount : ""} ${
+                      replyCount === 1 ? "reply" : "replies"
+                    }`}
+              </button>
+            )}
+          </div>
 
           {replying && (
             <div className="mt-2 flex gap-2">
@@ -59,6 +110,20 @@ const CommentItem = ({ comment, postId }) => {
               >
                 {isSubmittingReply ? "Sending..." : "Send"}
               </button>
+            </div>
+          )}
+
+          {showReplies && (
+            <div className="mt-2 ml-4 border-l border-slate-100 pl-3">
+              {repliesLoading && (
+                <p className="py-2 text-xs text-slate-400">Loading replies...</p>
+              )}
+              {!repliesLoading && replies?.length === 0 && (
+                <p className="py-2 text-xs text-slate-400">No replies yet.</p>
+              )}
+              {replies?.map((reply) => (
+                <ReplyItem key={reply.id} reply={reply} />
+              ))}
             </div>
           )}
         </div>

@@ -7,35 +7,49 @@ export const commentApi = baseApi.injectEndpoints({
     // parent__isnull=True) rather than CommentViewSet's generic list,
     // since the generic list returns top-level comments AND replies
     // mixed together when only `?post=` is passed.
-    //
-    // NOTE: adjust this path if your posts/urls.py registers the router
-    // differently — this assumes the same "api/posts/posts/" prefix seen
-    // in your other post endpoints.
     getComments: builder.query({
       query: (postId) => `api/posts/posts/${postId}/comments/`,
       providesTags: (result, err, postId) => [{ type: "Comment", id: postId }],
     }),
 
+    // GET /api/posts/comments/?post=<postId>&parent=<commentId> -> replies
+    // to a single top-level comment. Uses the generic CommentViewSet list,
+    // filtered down to just this comment's children.
+    getReplies: builder.query({
+      query: ({ postId, parentId }) =>
+        `api/posts/comments/?post=${postId}&parent=${parentId}`,
+      providesTags: (result, err, { parentId }) => [{ type: "Reply", id: parentId }],
+    }),
+
     // POST /api/posts/comments/ -> create a top-level comment or a reply
     // (pass `parent` to reply to an existing comment).
-    //
-    // NOTE: adjust this path if CommentViewSet is registered under a
-    // different route in your router.
     createComment: builder.mutation({
       query: ({ post, content, parent }) => ({
         url: "api/posts/comments/",
         method: "POST",
         body: parent ? { post, content, parent } : { post, content },
       }),
-      // Refresh this post's comment list AND the post itself, since
-      // comments_count is computed server-side on the Post object.
-      invalidatesTags: (result, err, { post }) => [
-        { type: "Comment", id: post },
-        { type: "Post", id: post },
-      ],
+      // Refresh this post's comment list and the post itself (comments_count
+      // is computed server-side), plus the parent's reply list if this was
+      // a reply, so the new reply actually shows up.
+      invalidatesTags: (result, err, { post, parent }) =>
+        parent
+          ? [
+              { type: "Comment", id: post },
+              { type: "Post", id: post },
+              { type: "Reply", id: parent },
+            ]
+          : [
+              { type: "Comment", id: post },
+              { type: "Post", id: post },
+            ],
     }),
   }),
   overrideExisting: false,
 });
 
-export const { useGetCommentsQuery, useCreateCommentMutation } = commentApi;
+export const {
+  useGetCommentsQuery,
+  useGetRepliesQuery,
+  useCreateCommentMutation,
+} = commentApi;
