@@ -19,6 +19,7 @@ import {
   useDeletePostMutation,
 } from "../../features/posts/postApi";
 import { openReportModal } from "../../features/reports/reportSlice";
+import { selectCurrentUser } from "../../features/auth/authSlice";
 import CommentList from "./CommentList";
 
 const formatDate = (dateString) => {
@@ -32,7 +33,7 @@ const formatDate = (dateString) => {
 
 const PostDetails = ({ postId, onClose }) => {
   const dispatch = useDispatch();
-  const currentUser = useSelector((s) => s.auth.user);
+  const currentUser = useSelector(selectCurrentUser);
 
   const {
     data: post,
@@ -54,9 +55,15 @@ const PostDetails = ({ postId, onClose }) => {
   const [actionError, setActionError] = useState("");
 
   // The post's author id can come through as `user` (nested object) or
-  // `user_id` depending on the serializer — check both.
+  // `user_id` depending on the serializer — check both. Compare as
+  // strings so a number-vs-string id mismatch (e.g. 5 vs "5") never
+  // silently breaks ownership detection.
   const authorId = post?.user?.id ?? post?.user_id;
-  const isOwner = Boolean(currentUser && authorId && currentUser.id === authorId);
+  const isOwner = Boolean(
+    currentUser &&
+      authorId != null &&
+      String(currentUser.id) === String(authorId)
+  );
 
   const handleClose = () => {
     onClose?.();
