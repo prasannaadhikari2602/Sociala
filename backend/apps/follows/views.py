@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.notifications.services import notify
@@ -15,10 +16,20 @@ from .serializers import UserBriefSerializer
 User = get_user_model()
 
 
+# Pagination used for user-listing endpoints (explore, followers, following).
+# Explicit here so behaviour doesn't silently depend on global DRF settings,
+# and so the frontend's "page_size" query param is actually honoured.
+class UserListPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 # Explore and search users
 class UserExploreView(generics.ListAPIView):
     serializer_class = UserBriefSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = UserListPagination
 
     def get_queryset(self):
         # Get the search query from the URL
@@ -34,13 +45,18 @@ class UserExploreView(generics.ListAPIView):
                 | Q(profile__full_name__icontains=q)
             )
 
-        return qs.select_related("profile")
+        # Explicit, stable ordering is required for pagination to be
+        # correct — without it Postgres may return rows in a different
+        # order on each query, causing duplicate or skipped users
+        # across pages.
+        return qs.select_related("profile").order_by("username")
 
 
 # List users who follow a specific user
 class FollowersListView(generics.ListAPIView):
     serializer_class = UserBriefSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = UserListPagination
 
     def get_queryset(self):
         user_id = self.kwargs["user_id"]
@@ -58,13 +74,14 @@ class FollowersListView(generics.ListAPIView):
 
         return User.objects.filter(
             id__in=follower_ids
-        ).select_related("profile")
+        ).select_related("profile").order_by("username")
 
 
 # List users followed by a specific user
 class FollowingListView(generics.ListAPIView):
     serializer_class = UserBriefSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = UserListPagination
 
     def get_queryset(self):
         user_id = self.kwargs["user_id"]
@@ -82,7 +99,7 @@ class FollowingListView(generics.ListAPIView):
 
         return User.objects.filter(
             id__in=following_ids
-        ).select_related("profile")
+        ).select_related("profile").order_by("username")
 
 
 # Follow a user

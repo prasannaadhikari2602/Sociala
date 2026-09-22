@@ -126,48 +126,67 @@ class PostViewSet(viewsets.ModelViewSet):
         user = self.request.user
         mine = self.request.query_params.get("mine")
         user_id = self.request.query_params.get("user")
+        visibility = self.request.query_params.get("visibility")
+        search = self.request.query_params.get("search")
 
         # Return only the current user's posts.
         if mine == "true":
-            return qs.filter(user=user)
+            qs = qs.filter(user=user)
 
         # Return posts belonging to a specific user.
-        if user_id:
+        elif user_id:
             target_qs = qs.filter(user_id=user_id)
 
             if str(user.id) == str(user_id):
-                return target_qs
+                qs = target_qs
 
-            follows_target = Follow.objects.filter(
-                follower=user,
-                following_id=user_id
-            ).exists()
+            else:
+                follows_target = Follow.objects.filter(
+                    follower=user,
+                    following_id=user_id
+                ).exists()
 
-            if follows_target:
-                return target_qs.filter(
-                    Q(visibility="public")
-                    | Q(visibility="friends")
-                )
+                if follows_target:
+                    qs = target_qs.filter(
+                        Q(visibility="public")
+                        | Q(visibility="friends")
+                    )
 
-            return target_qs.filter(
-                visibility="public"
-            )
+                else:
+                    qs = target_qs.filter(
+                        visibility="public"
+                    )
+
+        # Explore: all public posts (not limited to people you follow).
+        elif visibility == "public":
+            qs = qs.filter(visibility="public")
 
         # Default feed: own posts + posts from followed users.
-        following_ids = Follow.objects.filter(
-            follower=user
-        ).values_list(
-            "following_id",
-            flat=True
-        )
-
-        return qs.filter(
-            Q(user=user)
-            | Q(
-                user_id__in=following_ids,
-                visibility__in=["public", "friends"]
+        else:
+            following_ids = Follow.objects.filter(
+                follower=user
+            ).values_list(
+                "following_id",
+                flat=True
             )
-        ).distinct()
+
+            qs = qs.filter(
+                Q(user=user)
+                | Q(
+                    user_id__in=following_ids,
+                    visibility__in=["public", "friends"]
+                )
+            ).distinct()
+
+        # Apply text search on top of whichever scope was selected above.
+        # Matches on post content or the author's username.
+        if search:
+            qs = qs.filter(
+                Q(content__icontains=search)
+                | Q(user__username__icontains=search)
+            )
+
+        return qs
 
     def _post_visible(self, post, user, following_ids):
         if post.user_id == user.id:
