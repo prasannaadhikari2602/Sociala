@@ -54,11 +54,12 @@ const PostDetails = ({ postId, onClose }) => {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [actionError, setActionError] = useState("");
 
-  // The post's author id can come through as `user` (nested object) or
-  // `user_id` depending on the serializer — check both. Compare as
-  // strings so a number-vs-string id mismatch (e.g. 5 vs "5") never
+  // The serializer returns the author under `author` (confirmed by
+  // PostCard.jsx: `originalPost.author ?? originalPost.user`) — check
+  // that first, then fall back to `user` / `user_id` for safety.
+  // Compare ids as strings so a number-vs-string mismatch never
   // silently breaks ownership detection.
-  const authorId = post?.user?.id ?? post?.user_id;
+  const authorId = post?.author?.id ?? post?.user?.id ?? post?.user_id;
   const isOwner = Boolean(
     currentUser &&
       authorId != null &&

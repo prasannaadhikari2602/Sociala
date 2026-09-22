@@ -191,7 +191,7 @@ const PostCard = ({ post }) => {
             <img
               src={originalPost.image}
               alt={originalPost.caption || "Post"}
-              className="max-h-[420px] w-full object-cover"
+              className="max-h-420px w-full object-cover"
             />
           </div>
         )}

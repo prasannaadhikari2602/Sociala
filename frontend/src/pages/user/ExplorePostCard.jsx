@@ -106,7 +106,7 @@ const ExplorePostCard = ({ post }) => {
           <img
             src={post.image}
             alt={post.caption || "Post"}
-            className="max-h-[420px] w-full object-cover"
+            className="max-h-420px w-full object-cover"
           />
         </div>
       )}
