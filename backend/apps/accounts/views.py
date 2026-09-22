@@ -260,8 +260,13 @@ class MeView(APIView):
         user = request.user
 
         # Return basic profile information.
+        #
+        # `id` is required by the frontend (e.g. PostDetails.jsx)
+        # to determine post ownership — without it, ownership
+        # checks against currentUser.id always fail.
         return Response(
             {
+                "id": user.id,
                 "email": user.email,
                 "username": user.username,
                 "role": user.role,
