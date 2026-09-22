@@ -28,8 +28,7 @@ import { selectCurrentUser } from "../features/auth/authSlice";
 import { useLogoutUserMutation } from "../features/auth/authApi";
 import { useGetUnreadCountQuery } from "../features/notifications/notificationApi";
 
-// Adjust this path if PostComposer lives somewhere else in your tree.
-import PostComposer from "./Post/PostComposer";
+import PostComposer from "../pages/user/PostComposer";
 
 
 const UserNavbar = () => {

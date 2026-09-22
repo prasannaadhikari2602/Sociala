@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { FiImage, FiX } from "react-icons/fi";
 import { useCreatePostMutation } from "../../features/posts/postApi";
 
-const PostComposer = () => {
+const PostComposer = ({ onSuccess }) => {
   const currentUser = useSelector((s) => s.auth.user);
   const [content, setContent] = useState("");
   const [visibility, setVisibility] = useState("public");
@@ -11,6 +11,7 @@ const PostComposer = () => {
   const [previews, setPreviews] = useState([]);
   const fileRef = useRef(null);
   const [createPost, { isLoading }] = useCreatePostMutation();
+  const [error, setError] = useState("");
 
   const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
@@ -25,16 +26,23 @@ const PostComposer = () => {
 
   const submit = async () => {
     if (!content.trim() && images.length === 0) return;
+    setError("");
 
     const formData = new FormData();
     formData.append("content", content);
     formData.append("visibility", visibility);
     images.forEach((img) => formData.append("images", img));
 
-    await createPost(formData);
-    setContent("");
-    setImages([]);
-    setPreviews([]);
+    try {
+      await createPost(formData).unwrap();
+      setContent("");
+      setImages([]);
+      setPreviews([]);
+      onSuccess?.();
+    } catch (err) {
+      console.error("Create post failed:", err);
+      setError("Couldn't create your post. Please try again.");
+    }
   };
 
   return (
@@ -63,6 +71,10 @@ const PostComposer = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {error && (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
       )}
 
       <div className="mt-3 flex items-center justify-between">
