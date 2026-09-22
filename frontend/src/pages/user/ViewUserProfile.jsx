@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { FiMapPin, FiCalendar } from "react-icons/fi";
 import { MdVerified } from "react-icons/md";
@@ -16,8 +17,40 @@ const ViewUserProfile = () => {
   const { userId } = useParams();
   const { data, isLoading, isError } = useGetUserProfileQuery(userId);
   const { data: posts, isLoading: postsLoading } = useGetUserPostsQuery(userId, { skip: !userId });
-  const [follow] = useFollowUserMutation();
-  const [unfollow] = useUnfollowUserMutation();
+  const [follow, { isLoading: isFollowing }] = useFollowUserMutation();
+  const [unfollow, { isLoading: isUnfollowing }] = useUnfollowUserMutation();
+
+  // Local optimistic follow state — flips instantly on click for a
+  // responsive UI, and re-syncs from the server whenever fresh profile
+  // data arrives (now that followApi properly invalidates this query's
+  // { type: "Profile", id: userId } tag on follow/unfollow).
+  const [isFollowingState, setIsFollowingState] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setIsFollowingState(Boolean(data.is_following));
+    }
+  }, [data?.is_following]);
+
+  const handleToggleFollow = async () => {
+    if (isFollowing || isUnfollowing) return;
+
+    const wasFollowing = isFollowingState;
+    // Flip immediately so the button feels instant.
+    setIsFollowingState(!wasFollowing);
+
+    try {
+      if (wasFollowing) {
+        await unfollow(data.id).unwrap();
+      } else {
+        await follow(data.id).unwrap();
+      }
+    } catch (err) {
+      console.error("Follow action failed:", err);
+      // Revert on failure.
+      setIsFollowingState(wasFollowing);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -69,14 +102,15 @@ const ViewUserProfile = () => {
                 </div>
 
                 <button
-                  onClick={() => (profile.is_following ? unfollow(profile.id) : follow(profile.id))}
-                  className={`mb-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition ${
-                    profile.is_following
+                  onClick={handleToggleFollow}
+                  disabled={isFollowing || isUnfollowing}
+                  className={`mb-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:opacity-60 ${
+                    isFollowingState
                       ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
                       : "bg-[#A855F7] text-white hover:bg-[#9333EA]"
                   }`}
                 >
-                  {profile.is_following ? "Following" : "Follow"}
+                  {isFollowingState ? "Following" : "Follow"}
                 </button>
               </div>
 

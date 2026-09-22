@@ -34,11 +34,17 @@ export const followApi = baseApi.injectEndpoints({
 
     followUser: builder.mutation({
       query: (userId) => ({ url: `api/follows/${userId}/follow/`, method: "POST" }),
+      // Invalidate the specific tagged Profile instance (matches
+      // getUserProfile / getProfileByUserId's providesTags: { type: "Profile", id }),
+      // not just the bare "Profile" tag — otherwise the profile page's
+      // is_following / followers_count never refetches after this call.
+      // The bare "Profile" string is kept too, so getMyProfile also refreshes.
       invalidatesTags: (result, error, userId) => [
         { type: "User", id: "EXPLORE" },
         { type: "User", id: userId },
         { type: "FollowList", id: "LIST" },
-        { type: "Profile" },
+        { type: "Profile", id: userId },
+        "Profile",
       ],
     }),
 
@@ -48,7 +54,8 @@ export const followApi = baseApi.injectEndpoints({
         { type: "User", id: "EXPLORE" },
         { type: "User", id: userId },
         { type: "FollowList", id: "LIST" },
-        { type: "Profile" },
+        { type: "Profile", id: userId },
+        "Profile",
       ],
     }),
   }),
