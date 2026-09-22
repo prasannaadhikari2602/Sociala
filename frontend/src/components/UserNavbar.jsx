@@ -28,6 +28,9 @@ import { selectCurrentUser } from "../features/auth/authSlice";
 import { useLogoutUserMutation } from "../features/auth/authApi";
 import { useGetUnreadCountQuery } from "../features/notifications/notificationApi";
 
+// Adjust this path if PostComposer lives somewhere else in your tree.
+import PostComposer from "./Post/PostComposer";
+
 
 const UserNavbar = () => {
 
@@ -38,6 +41,8 @@ const UserNavbar = () => {
   const [open, setOpen] = useState(false);
 
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
 
   // ==========================================
@@ -110,6 +115,20 @@ const UserNavbar = () => {
   const handleMobileNav = (path) => {
     closeMenu();
     navigate(path);
+  };
+
+
+  // ==========================================
+  // OPEN / CLOSE CREATE POST MODAL
+  // ==========================================
+
+  const openCreateModal = () => {
+    closeMenu();
+    setShowCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
   };
 
 
@@ -357,7 +376,7 @@ const UserNavbar = () => {
 
           <button
             type="button"
-            onClick={() => navigate("/posts")}
+            onClick={openCreateModal}
             className="
               hidden
               items-center
@@ -801,7 +820,7 @@ const UserNavbar = () => {
 
             <button
               type="button"
-              onClick={() => handleMobileNav("/posts")}
+              onClick={openCreateModal}
               className="
                 mt-3
                 flex
@@ -980,6 +999,56 @@ const UserNavbar = () => {
             </button>
 
           </nav>
+
+        </div>
+
+      )}
+
+
+
+      {/* ========================================
+          CREATE POST MODAL
+      ========================================= */}
+
+      {showCreateModal && (
+
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+          onClick={closeCreateModal}
+        >
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="
+              flex w-full max-w-xl flex-col
+              overflow-hidden
+              rounded-t-2xl sm:rounded-2xl
+              bg-white
+              shadow-xl
+              max-h-[90vh]
+            "
+          >
+
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h2 className="text-base font-bold text-[#12111A]">Create post</h2>
+
+              <button
+                type="button"
+                onClick={closeCreateModal}
+                className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100"
+                aria-label="Close"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto px-5 py-4 sm:px-6">
+              <PostComposer onSuccess={closeCreateModal} />
+            </div>
+
+          </div>
 
         </div>
 

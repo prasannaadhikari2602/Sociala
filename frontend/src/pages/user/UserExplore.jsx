@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { FiUsers, FiGrid, FiSearch } from "react-icons/fi";
 
@@ -27,6 +28,8 @@ const UserExplore = () => {
 
   const [follow] = useFollowUserMutation();
   const [unfollow] = useUnfollowUserMutation();
+
+  const currentUser = useSelector((s) => s.auth.user);
 
   // Debounce search input so we don't refetch on every keystroke
   useEffect(() => {
@@ -66,10 +69,29 @@ const UserExplore = () => {
   const peopleHasNext = Array.isArray(peopleData) ? false : Boolean(peopleData?.next);
   const peopleHasPrevious = Array.isArray(peopleData) ? false : Boolean(peopleData?.previous);
 
-  const postsList = Array.isArray(postsData) ? postsData : postsData?.results ?? [];
-  const postsCount = Array.isArray(postsData) ? postsList.length : postsData?.count;
+  const rawPostsList = Array.isArray(postsData) ? postsData : postsData?.results ?? [];
   const postsHasNext = Array.isArray(postsData) ? false : Boolean(postsData?.next);
   const postsHasPrevious = Array.isArray(postsData) ? false : Boolean(postsData?.previous);
+
+  // Defense-in-depth: explorePosts already asks the backend for
+  // visibility=public, but don't trust that alone. Keep a post only if
+  // it's public, it's your own, or it's friends-only AND you follow the
+  // author. Everything else (private, or friends-only from someone you
+  // don't follow) is dropped here even if the API accidentally sent it.
+  const isPostVisible = (post) => {
+    const visibility = post.visibility ?? "public";
+    const ownerId = post.user?.id;
+
+    if (currentUser && ownerId === currentUser.id) return true;
+    if (visibility === "public") return true;
+    if (visibility === "friends" && post.user?.is_following) return true;
+    return false;
+  };
+
+  const postsList = rawPostsList.filter(isPostVisible);
+  // Server-reported count can include posts we just filtered out client-side,
+  // so it's an upper bound rather than an exact count once filtering kicks in.
+  const postsCount = Array.isArray(postsData) ? postsList.length : postsData?.count;
 
   const peoplePreview = activeTab === "all" ? peopleList.slice(0, 5) : peopleList;
   const postsPreview = activeTab === "all" ? postsList.slice(0, 5) : postsList;

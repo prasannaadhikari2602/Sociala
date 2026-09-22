@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   FiX,
   FiHeart,
@@ -32,6 +32,7 @@ const formatDate = (dateString) => {
 
 const PostDetails = ({ postId, onClose }) => {
   const dispatch = useDispatch();
+  const currentUser = useSelector((s) => s.auth.user);
 
   const {
     data: post,
@@ -51,6 +52,11 @@ const PostDetails = ({ postId, onClose }) => {
   const [editImagePreview, setEditImagePreview] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [actionError, setActionError] = useState("");
+
+  // The post's author id can come through as `user` (nested object) or
+  // `user_id` depending on the serializer — check both.
+  const authorId = post?.user?.id ?? post?.user_id;
+  const isOwner = Boolean(currentUser && authorId && currentUser.id === authorId);
 
   const handleClose = () => {
     onClose?.();
@@ -95,7 +101,7 @@ const PostDetails = ({ postId, onClose }) => {
   };
 
   const handleSaveEdit = async () => {
-    if (!post) return;
+    if (!post || !isOwner) return;
     setActionError("");
 
     // Preserve whichever field name the post actually uses
@@ -119,7 +125,7 @@ const PostDetails = ({ postId, onClose }) => {
   };
 
   const handleDelete = async () => {
-    if (!post) return;
+    if (!post || !isOwner) return;
     setActionError("");
     try {
       await deletePost(post.id).unwrap();
@@ -156,32 +162,36 @@ const PostDetails = ({ postId, onClose }) => {
           <div className="flex items-center gap-1.5">
             {post && !isEditing && !confirmingDelete && (
               <>
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
-                >
-                  <FiEdit2 size={14} />
-                  Edit
-                </button>
+                {isOwner ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={startEditing}
+                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                    >
+                      <FiEdit2 size={14} />
+                      Edit
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(true)}
-                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50"
-                >
-                  <FiTrash2 size={14} />
-                  Delete
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => dispatch(openReportModal(post.id))}
-                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100"
-                >
-                  <FiFlag size={14} />
-                  Report
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(true)}
+                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50"
+                    >
+                      <FiTrash2 size={14} />
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => dispatch(openReportModal(post.id))}
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100"
+                  >
+                    <FiFlag size={14} />
+                    Report
+                  </button>
+                )}
               </>
             )}
 
@@ -219,7 +229,7 @@ const PostDetails = ({ postId, onClose }) => {
           {!isLoading && !isError && post && (
             <>
               {/* Delete confirmation */}
-              {confirmingDelete && (
+              {confirmingDelete && isOwner && (
                 <div className="mx-5 mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 sm:mx-6">
                   <p className="text-sm font-medium text-red-700">
                     Delete this post? This can't be undone.
@@ -255,8 +265,10 @@ const PostDetails = ({ postId, onClose }) => {
                 </div>
               )}
 
-              {/* Image (edit mode preview) */}
-              {isEditing && (
+              {/* Image (edit mode preview) — only owners ever reach this branch,
+                  since isEditing can only be set true via startEditing(),
+                  which is only wired to a button rendered when isOwner is true */}
+              {isEditing && isOwner && (
                 <div className="relative max-h-[40vh] w-full overflow-hidden bg-black">
                   <img
                     src={editImagePreview || post.image}
@@ -294,7 +306,7 @@ const PostDetails = ({ postId, onClose }) => {
                   </p>
                 )}
 
-                {!isEditing ? (
+                {!isEditing || !isOwner ? (
                   <>
                     {(post.caption || post.content) && (
                       <p className="text-sm leading-6 text-slate-700">
