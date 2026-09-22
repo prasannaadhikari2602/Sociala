@@ -147,6 +147,8 @@ const PostDetails = ({ postId, onClose }) => {
 
   if (!postId) return null;
 
+  console.log({ currentUser, authorId, postUser: post?.user });
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"

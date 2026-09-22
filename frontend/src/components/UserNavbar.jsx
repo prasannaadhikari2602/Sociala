@@ -1012,7 +1012,7 @@ const UserNavbar = () => {
       {showCreateModal && (
 
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-60 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
           onClick={closeCreateModal}
         >
 
