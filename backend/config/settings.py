@@ -277,37 +277,30 @@ AUTH_COOKIE_SAMESITE = "None"
 
 
 # ============================================================
-# EMAIL - BREVO SMTP
+# EMAIL - BREVO HTTP API
+# ============================================================
+#
+# IMPORTANT: Transactional email is sent via Brevo's HTTPS API
+# (see apps/accounts/utils.py -> send_transactional_email),
+# NOT through Django's SMTP email backend.
+#
+# Render's free web service tier blocks outbound traffic on
+# SMTP ports (25, 465, 587), so the SMTP backend times out in
+# production even though it works locally. The HTTP API uses a
+# normal HTTPS request instead, so it is unaffected.
+#
+# Required env var:
+#   BREVO_API_KEY -> Brevo dashboard: SMTP & API -> API Keys tab
+#                    (this is different from the SMTP
+#                    username/password used previously)
 # ============================================================
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-EMAIL_HOST = os.getenv(
-    "EMAIL_HOST",
-    "smtp-relay.brevo.com",
-)
-
-EMAIL_PORT = int(
-    os.getenv("EMAIL_PORT", "587")
-)
-
-EMAIL_HOST_USER = os.getenv(
-    "EMAIL_HOST_USER"
-)
-
-EMAIL_HOST_PASSWORD = os.getenv(
-    "EMAIL_HOST_PASSWORD"
-)
-
-EMAIL_USE_TLS = (
-    os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
-)
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL"
 )
 
-EMAIL_TIMEOUT = 10
 
 # ============================================================
 # INTERNATIONALIZATION
