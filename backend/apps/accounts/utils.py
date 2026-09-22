@@ -14,12 +14,14 @@ import secrets
 # Used to calculate OTP expiration time.
 from datetime import timedelta
 
+# Used to call Brevo's HTTP email API.
+# (Render's free tier blocks outbound SMTP ports, so we send
+# transactional email over HTTPS instead of SMTP.)
+import requests
+
 
 # Django settings.
 from django.conf import settings
-
-# Used to create and send emails.
-from django.core.mail import EmailMultiAlternatives
 
 # Used to work with timezone-aware dates and times.
 from django.utils import timezone
@@ -251,18 +253,33 @@ def verify_otp(model, user, raw_code: str) -> bool:
 
 
 # ============================================================
-# EMAIL SENDING
+# EMAIL SENDING (via Brevo HTTP API)
 # ============================================================
 #
-# Django's SMTP email backend is used here.
+# IMPORTANT: This uses Brevo's HTTPS API instead of SMTP.
 #
-# The SMTP server can be configured in settings.py/.env.
+# Render's free tier blocks outbound traffic to SMTP ports
+# (25, 465, 587), so the previous SMTP-based approach
+# (Django's EmailMultiAlternatives + smtp backend) times out
+# in production even though it works locally.
 #
-# Example:
-#   EMAIL_HOST = smtp-relay.brevo.com
+# The HTTP API is a normal HTTPS request, so it is not
+# affected by that restriction and works on Render's free tier.
 #
-# Brevo acts as the SMTP email relay.
+# Required setting:
+#   BREVO_API_KEY  -> from Brevo: SMTP & API -> API Keys tab
+#                     (NOT the SMTP key/password used before)
+#
+# settings.py should read it from the environment, e.g.:
+#   BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
 # ============================================================
+
+# Brevo's transactional email API endpoint.
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+
+# Brevo API key, read from Django settings (sourced from env vars).
+BREVO_API_KEY = getattr(settings, "BREVO_API_KEY", None)
+
 
 def send_transactional_email(
     to_email: str,
@@ -270,45 +287,69 @@ def send_transactional_email(
     html_content: str
 ) -> None:
     """
-    Send an HTML transactional email.
+    Send an HTML transactional email using Brevo's HTTP API.
 
     If sending the email fails:
         - The error is logged.
         - The exception is NOT passed to the caller.
 
-    This means a temporary SMTP problem will not
+    This means a temporary API problem will not
     crash signup, verification, or password-reset requests.
     """
 
-    # Create the email message.
-    message = EmailMultiAlternatives(
-        subject=subject,
+    # Guard against a missing API key so we fail loudly in the
+    # logs instead of throwing an unclear error deep in requests.
+    if not BREVO_API_KEY:
+        logger.error(
+            "BREVO_API_KEY is not configured; cannot send email to %s",
+            to_email
+        )
+        return
 
-        # Plain-text fallback.
-        # The same content is used here.
-        body=html_content,
+    # Build the request payload in the shape Brevo's API expects.
+    payload = {
+        "sender": {
+            "email": settings.DEFAULT_FROM_EMAIL,
+        },
+        "to": [
+            {"email": to_email}
+        ],
+        "subject": subject,
 
-        # Sender email configured in Django settings.
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        # Brevo accepts raw HTML directly; no plain-text
+        # fallback is required.
+        "htmlContent": html_content,
+    }
 
-        # Recipient.
-        to=[to_email],
-    )
-
-    # Attach the HTML version of the email.
-    message.attach_alternative(
-        html_content,
-        "text/html"
-    )
+    # Required headers for Brevo's transactional email API.
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
 
     try:
-        # Send the email.
-        message.send(fail_silently=False)
+        # Send the email via Brevo's HTTPS API.
+        #
+        # timeout=10 prevents a hung request from blocking
+        # the web worker indefinitely.
+        response = requests.post(
+            BREVO_API_URL,
+            json=payload,
+            headers=headers,
+            timeout=10,
+        )
+
+        # Raises an exception for any 4xx/5xx response,
+        # e.g. an unverified sender or invalid API key.
+        response.raise_for_status()
 
     except Exception:
         # If sending fails, record the full error in the logs.
         #
-        # The error is intentionally not raised again.
+        # The error is intentionally not raised again, so a
+        # temporary API problem does not crash signup,
+        # verification, or password-reset requests.
         logger.exception(
             "Failed to send email to %s",
             to_email
