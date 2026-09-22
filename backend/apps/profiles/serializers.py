@@ -80,6 +80,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     followers_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
@@ -99,6 +100,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "is_setup",
             "followers_count",
             "following_count",
+            "is_following",
             "created_at",
             "updated_at",
         ]
@@ -122,6 +124,23 @@ class ProfileSerializer(serializers.ModelSerializer):
         return Follow.objects.filter(
             follower=obj.user
         ).count()
+
+    # Check whether the current authenticated user follows this profile's user.
+    def get_is_following(self, obj):
+        request = self.context.get("request")
+        current_user = getattr(request, "user", None)
+
+        if not current_user or not current_user.is_authenticated:
+            return False
+
+        # A user never "follows" themselves in this context.
+        if current_user.id == obj.user_id:
+            return False
+
+        return Follow.objects.filter(
+            follower=current_user,
+            following=obj.user
+        ).exists()
 
 
 # Serializer used during first-time profile setup.

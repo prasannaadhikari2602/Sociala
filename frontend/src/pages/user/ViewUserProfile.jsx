@@ -23,7 +23,8 @@ const ViewUserProfile = () => {
   // Local optimistic follow state — flips instantly on click for a
   // responsive UI, and re-syncs from the server whenever fresh profile
   // data arrives (now that followApi properly invalidates this query's
-  // { type: "Profile", id: userId } tag on follow/unfollow).
+  // { type: "Profile", id: userId } tag on follow/unfollow, and the
+  // ProfileSerializer now actually includes is_following).
   const [isFollowingState, setIsFollowingState] = useState(false);
 
   useEffect(() => {
@@ -35,15 +36,21 @@ const ViewUserProfile = () => {
   const handleToggleFollow = async () => {
     if (isFollowing || isUnfollowing) return;
 
+    // data.id is the Profile row's own pk — NOT a User id.
+    // The follow/unfollow endpoints expect a User id, which is
+    // returned separately as data.user_id by ProfileSerializer.
+    const targetUserId = data?.user_id;
+    if (!targetUserId) return;
+
     const wasFollowing = isFollowingState;
     // Flip immediately so the button feels instant.
     setIsFollowingState(!wasFollowing);
 
     try {
       if (wasFollowing) {
-        await unfollow(data.id).unwrap();
+        await unfollow(targetUserId).unwrap();
       } else {
-        await follow(data.id).unwrap();
+        await follow(targetUserId).unwrap();
       }
     } catch (err) {
       console.error("Follow action failed:", err);
