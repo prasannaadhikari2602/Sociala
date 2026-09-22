@@ -107,10 +107,12 @@ const ViewUserProfile = () => {
 
               {/* Stats: display-only — followers/following counts are shown,
                   but this profile's own followers/following lists are not
-                  viewable by other users, so these are plain divs, not links. */}
+                  viewable by other users, so these are plain divs, not links.
+                  Posts count falls back to the fetched posts array length if
+                  the profile endpoint doesn't provide posts_count directly. */}
               <div className="mt-6 grid grid-cols-3 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-[#F8F8FA]">
                 <div className="px-3 py-4 text-center">
-                  <p className="text-lg font-bold">{profile.posts_count ?? 0}</p>
+                  <p className="text-lg font-bold">{profile.posts_count ?? posts?.length ?? 0}</p>
                   <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">Posts</p>
                 </div>
                 <div className="px-3 py-4 text-center">
